@@ -259,7 +259,7 @@ define inline_script canvas
 	___run__
 	from openexp.canvas import canvas
 	c = canvas(exp)
-	c.set_font('mono', 260)
+	c.set_font('mono', 270)
 	
 	word = self.get('word')
 	word_pos = self.get('word_pos')
