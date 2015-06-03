@@ -216,12 +216,19 @@ define inline_script set_stimuli
 	correct = (left, left, right, right, left, left, right, right)
 
 	import random
+	# return random character position (in pixels) for probe left/right from centre of word
 	def probe_x(probe_word):
-	  # FIXME: what is the character width?
-	  width = 40 # guess at 40px
-	  # FIXME: is word centred or does it start from first letter?
-	  # this assumes the latter, otherwise need to go +/-
-	  return random.randint(1,len(probe_word)) * width
+	  width  = 40            # FIXME: guess at width in px
+	  length = len(probe_word)
+	  if (length % 2 == 0):  # even
+	    l = length
+	  else:                  # odd
+	    l = length - 1
+	  char = random.randint(-l,l)
+	  px   = char * width
+	  if (length % 2 == 1):  # odd
+	    px += width / 2
+	  return px
 
 	def setcycles(words, start = 0):
 	  global top, bottom, left, right, word_y, pair_y, probe_y, probe, correct, string, block
