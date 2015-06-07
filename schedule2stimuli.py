@@ -2,6 +2,7 @@
 
 import csv
 import pprint
+import pdb
 
 p = 0
 
@@ -17,9 +18,10 @@ inf.close()
 a       = 0
 b       = []
 phase   = ''
-csvfile = open('stimuli_' + str(p) + '.csv', 'wb')
+schedfile = 'stimuli_' + str(p) + '.csv'
+csvfile = open(schedfile, 'wb')
 writer  = csv.writer(csvfile, delimiter=',')
-for session in range(1,36):
+for session in range(0,35):
     writer.writerow([session])
     blocks   = ''
     previous = phase
@@ -38,3 +40,25 @@ for session in range(1,36):
         a = session % 10
     writer.writerow(b)
     writer.writerow([a])
+csvfile.close()
+
+# read csv
+a = {}
+b = {}
+with open(schedfile,'rb') as csvfile:
+    reader = csv.reader(csvfile, delimiter=',')
+    c = 0
+    for row in reader:
+        if c == 0:
+            session = int(row[0])
+            if session == transition: print "*** transition A -> B ***"
+        elif c == 1:
+            #pdb.set_trace()
+            b[session] = map(int,row)
+        else:
+            a[session] = int(row[0])
+        c += 1
+        if c == 3:
+            print 'B' + str(session) + ': ' + ',' . join(map(str,b[session]))
+            print "A%d: %d" % (session, a[session])
+            c = 0
