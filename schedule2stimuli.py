@@ -15,16 +15,15 @@ for line in inf.readlines():
 inf.close()
 
 # allocate stimuli and write csv
-a       = 0
-b       = []
-phase   = 'A'
+a         = 0
+b         = []
+previous  = 'A'
 schedfile = 'stimuli_' + str(p) + '.csv'
 csvfile = open(schedfile, 'wb')
 writer  = csv.writer(csvfile, delimiter=',')
 for session in range(0,35):
     writer.writerow([session])
-    previous = phase
-    if session > 0: phase = schedule[session - 1]
+    phase = schedule[session]
     if phase == 'B':
         if phase != previous:
             transition = session % 10
@@ -39,6 +38,7 @@ for session in range(0,35):
         a = session % 10
     writer.writerow(b)
     writer.writerow([a])
+    previous = phase
 csvfile.close()
 
 # read csv
