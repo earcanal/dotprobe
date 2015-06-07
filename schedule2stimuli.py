@@ -13,12 +13,14 @@ for line in inf.readlines():
     schedule = line.split(' ')
 inf.close()
 
-# allocate stimuli
-a = 0
-b = []
-phase = ''
+# allocate stimuli and write csv
+a       = 0
+b       = []
+phase   = ''
+csvfile = open('stimuli_' + str(p) + '.csv', 'wb')
+writer  = csv.writer(csvfile, delimiter=',')
 for session in range(1,36):
-    print "%s" % session
+    writer.writerow([session])
     blocks   = ''
     previous = phase
     phase    = schedule[session - 1]
@@ -34,5 +36,5 @@ for session in range(1,36):
         repeat += 1
     else:
         a = session % 10
-    print ',' . join(map(str,b))
-    print str(a)
+    writer.writerow(b)
+    writer.writerow([a])
