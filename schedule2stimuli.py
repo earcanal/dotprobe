@@ -17,7 +17,7 @@ inf.close()
 # allocate stimuli and write csv
 a       = 0
 b       = []
-phase   = ''
+phase   = 'A'
 schedfile = 'stimuli_' + str(p) + '.csv'
 csvfile = open(schedfile, 'wb')
 writer  = csv.writer(csvfile, delimiter=',')
@@ -25,7 +25,7 @@ for session in range(0,35):
     writer.writerow([session])
     blocks   = ''
     previous = phase
-    phase    = schedule[session - 1]
+    if session > 0: phase = schedule[session - 1]
     if phase == 'B':
         if phase != previous:
             transition = session % 10
