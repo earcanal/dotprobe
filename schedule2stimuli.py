@@ -23,7 +23,6 @@ csvfile = open(schedfile, 'wb')
 writer  = csv.writer(csvfile, delimiter=',')
 for session in range(0,35):
     writer.writerow([session])
-    blocks   = ''
     previous = phase
     if session > 0: phase = schedule[session - 1]
     if phase == 'B':
