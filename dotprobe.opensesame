@@ -242,15 +242,20 @@ define inline_script set_stimuli
 	    px += width / 2
 	  return px
 	
+	# build setcycle string suitable for use in a loop
+	# words: dictionary of word pair blocks
+	# blocks: stimuli blocks (within words) to use
 	def setcycles(words, blocks, start = 0):
 	  global top, bottom, left, right, word_y, pair_y, probe_y, probe, correct, string
 	  block_num = 0
+	  string    = ''
 	  for block in blocks:
 	    for pair_num in range(0,6):
 	      for i in range(0,8):
 		cycle   = start + (block_num * 48) + (pair_num * 8) + i
 		word    = words[block][pair_num][0]
 		pair    = words[block][pair_num][1]
+		# note that it takes 8 setcycle strings to configure each stimulus!
 		string += "setcycle %d word_y \"%s\"\n" % (cycle,word_y[i])
 		string += "setcycle %d word \"%s\"\n" % (cycle,word)
 		string += "setcycle %d pair \"%s\"\n" % (cycle,pair)
@@ -264,7 +269,7 @@ define inline_script set_stimuli
 		string += "setcycle %d probe_x \"%s\"\n" % (cycle,probe_x(probe_word))
 		string += "setcycle %d correct \"%s\"\n" % (cycle,correct[i])
 	    block_num += 1
-	  return
+	  return string
 	
 	import csv
 	def stimuli_from_csv(stimfile):
@@ -306,36 +311,55 @@ define inline_script set_stimuli
 			c += 1
 			if c == 3:
 				c = 0
-	
+	import re
 	print "participant %d, session %d, phase %s" % (p, session, phase)
 	# build setcycles string
 	session = exp.get('session') - 1 # session config indexed from 0
-	string  = ""
 	bl      = exp.items["block_loop"]
 	phase   = self.get('phase')
-	if phase == 'B': # abm
+	if phase == 'B':                                  ## abm
 		blocks = b[session]
 		print blocks
-		setcycles(nwords, blocks)
-		#FIXME: randomise stimuli
+		string = setcycles(nwords, blocks)
+		## randomise stimuli
+		# stimulus -> setcycle strings
+		strings = string.rstrip().rsplit("\n")
+		nblocks = len(b[session])
+		cycle = {}
+		for i in range(0,nblocks * 6 * 8):
+		  cycle[i] = []
+		  for j in range(0,8):
+		    cycle[i].append(strings[i * 8 + j])
+		# 192 not always exactly divisible by stimulus set, so
+		# (roughly) evenly exposure of all pairs
+		string = ''
+		i      = 0
+		regex  = re.compile(r'(setcycle)\s(\d+)(.*)')
+		while i < 192:                             # total ABM stimuli
+		  for b in range(0,nblocks * 6):           # for each available stimulus pair
+		    stim    = random.randint(0,7)          # random stimulus/probe config
+		    strings = cycle[b * 8 + stim]          # list of setcycle strings
+		    for s in strings:
+		      s = regex.sub(r"\1 %s\3" % str(i),s) # replace old cycle number
+		      string += s + "\n"                   # expand into seperate lines
+		    i += 1
+		#print string
 		#raise Exception('abort')
-	else: # dotprobe
+	else:                                              ## dotprobe
 		blocks = a[session]
 		print blocks
-		setcycles(nwords, blocks)
-		setcycles(iwords, [0], 48)
+		string  = setcycles(nwords, blocks)
+		string += setcycles(iwords, [0], 48)
 	string += "run trial_sequence\n"
 	bl.from_string(string)
-	
-	# do this *after* from_string() as it seems to reset these values
+
+	# set bloock loop attributes *after* from_string() which seems to reset these values
+	bl.repeat = 1
+	bl.order  = "random"
 	if phase == 'B': # abm
 		bl.cycles = 192
-		bl.repeat = 1
-		bl.order  = "sequential" # randomisation configured above
 	else: # dotprobe
 		bl.cycles = 96
-		bl.repeat = 1
-		bl.order  = "random"
 	
 	from pprint import pprint
 	#pprint(vars(bl))
