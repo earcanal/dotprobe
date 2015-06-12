@@ -212,9 +212,8 @@ define inline_script set_iti
 define inline_script set_stimuli
 	___prepare__
 	import random, re
-	# FIXME: rounding seems to vary here?
-	top     = 75/2 + 125
-	bottom  = -75/2 - 125
+	top     = 76/2 + 125
+	bottom  = -76/2 - 125
 	left    = 'left'
 	right   = 'right'
 	'''
@@ -249,6 +248,7 @@ define inline_script set_stimuli
 	  string  = ''.join(s)
 	  string  = re.sub(r'[A-Za-z]', ' ', string)
 	  return string
+
 	## DEPRECATED
 	# return random character position (in pixels) for dot probe left/right from centre of word
 	def probe_x(probe_word):
@@ -267,17 +267,19 @@ define inline_script set_stimuli
 	# build setcycle string suitable for use in a loop
 	# words: dictionary of word pair blocks
 	# blocks: stimuli blocks (within words) to use
-	def setcycles(words, blocks, start = 0):
+	def setcycles(words, blocks, start = 0, abm = False):
 	  global top, bottom, left, right, word_y, pair_y, probe_y, probe, correct, string
 	  block_num = 0
 	  string    = ''
 	  for block in blocks:
 	    for pair_num in range(0,6):
 	      for i in range(0,8):
+		if abm and word_y[i] == probe_y[i]: # only neutral location probes during ABM
+		  continue
 		cycle   = start + (block_num * 48) + (pair_num * 8) + i
 		word    = words[block][pair_num][0]
 		pair    = words[block][pair_num][1]
-		# one stimulus requires 8 setcycle strings
+		# one stimulus requires n setcycle strings
 		string += "setcycle %d word_y \"%s\"\n" % (cycle,word_y[i])
 		string += "setcycle %d word \"%s\"\n" % (cycle,word)
 		string += "setcycle %d pair \"%s\"\n" % (cycle,pair)
@@ -338,25 +340,28 @@ define inline_script set_stimuli
 	phase   = self.get('phase')
 	if phase == 'B':                                  ## abm
 		blocks = b[session]
-		string = setcycles(nwords, blocks)
+		string = setcycles(nwords, blocks, 0, True)
 		## randomise stimuli
-		# stimulus -> setcycle strings
+		# stimuli -> setcycle strings
 		strings = string.rstrip().rsplit("\n")
 		nblocks = len(b[session])
-		cycle = {}
-		for i in range(0,nblocks * 6 * 8):
-		  cycle[i] = []
-		  for j in range(0,8):
-		    cycle[i].append(strings[i * 8 + j])
-		# 192 not always exactly divisible by stimulus set, so
+		stimuli = {}
+		perms   = 4      # 4 probe perms (neutral word * 2 location * 2 probe) during ABM
+		stim_strings = 7 # strings to encode a stimulus
+		for i in range(0,nblocks * 6 * perms):
+		  stimuli[i] = []
+		  for j in range(0,stim_strings):
+		    stimuli[i].append(strings[i * stim_strings + j])
+		cycles = 192
+		# cycles not always exactly divisible by stimulus set, so
 		# (roughly) evenly exposure of all pairs
 		string = ''
 		i      = 0
 		regex  = re.compile(r'(setcycle)\s(\d+)(.*)')
-		while i < 192:                             # total ABM stimuli
+		while i < cycles:                          # total ABM stimuli
 		  for b in range(0,nblocks * 6):           # for each available stimulus pair
-		    stim    = random.randint(0,7)          # random stimulus/probe config
-		    strings = cycle[b * 8 + stim]          # list of setcycle strings
+		    stim    = random.randint(0,perms - 1)  # random stimulus/probe config
+		    strings = stimuli[b * perms + stim]    # get associated setcycle strings
 		    for s in strings:
 		      s = regex.sub(r"\1 %s\3" % str(i),s) # replace old cycle number
 		      string += s + "\n"                   # expand into seperate lines
@@ -371,7 +376,7 @@ define inline_script set_stimuli
 	bl.repeat = 1
 	bl.order  = "random"
 	if phase == 'B': # abm
-		bl.cycles = 192
+		bl.cycles = cycles
 	else: # dotprobe
 		bl.cycles = 96
 	
