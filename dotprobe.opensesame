@@ -60,7 +60,7 @@ define inline_script config
 	set _prepare ""
 	___run__
 	p          = self.get('subject_nr')
-	schedule_f = 'schedule_' + str(p)
+	schedule_f = exp.experiment_path + '/schedule_' + str(p)
 	session    = self.get('session')
 	inf = open(schedule_f,'r')
 	for line in inf.readlines():
@@ -75,7 +75,7 @@ define inline_script config
 	# set log filename
 	import codecs
 	exp._log.close()
-	exp._log = codecs.open('data/p' + str(p) + 's' + str(session) + '.csv', 'w', encoding='utf-8')
+	exp._log = codecs.open(exp.experiment_path + '/data/p' + str(p) + 's' + str(session) + '.csv', 'w', encoding='utf-8')
 	
 	# log start time
 	import time
@@ -287,7 +287,7 @@ define inline_script set_stimuli
 	import csv
 	def stimuli_from_csv(stimfile):
 		words = {}
-		with open(stimfile,'rb') as csvfile:
+		with open(exp.experiment_path + '/' + stimfile,'rb') as csvfile:
 			wordreader = csv.reader(csvfile, delimiter=',')
 			next(wordreader, None) # skip header
 			for row in wordreader:
@@ -308,7 +308,7 @@ define inline_script set_stimuli
 	
 	# read stimulus schedule
 	p = self.get('subject_nr')
-	schedfile = 'stimuli_' + str(p) + '.csv'
+	schedfile = exp.experiment_path + '/stimuli_' + str(p) + '.csv'
 	a = {}
 	b = {}
 	with open(schedfile,'rb') as csvfile:
