@@ -167,6 +167,21 @@ define inline_script inline_script
 	key, end_time = kb.get_key()
 	exp.set('response', key)
 	exp.set('response_time', end_time - start_time)
+
+	# check correctness
+	if key == self.get("correct_key"):
+	  exp.set("correct", 1)
+	else:
+	  exp.set("correct", 0)
+	self.experiment.total_responses += 1
+	if self.get("correct") == 1:
+	  self.experiment.total_correct += 1
+	# calculate accuracy
+	self.experiment.acc = 100.0 * self.experiment.total_correct / self.experiment.total_responses
+	# save accuracy under the two variables OpenSesame saves it to
+	exp.set("acc", self.experiment.acc)
+	exp.set("accuracy", self.experiment.acc)
+
 	__end__
 
 define sketchpad instructions
@@ -247,7 +262,7 @@ define inline_script set_stimuli
 	pair_y  = (top, top, top, top, bottom, bottom, bottom, bottom)
 	probe_y = (bottom, top, bottom, top, bottom, top, bottom, top)
 	probe   = (probe_l,probe_l,probe_r,probe_r,probe_l,probe_l,probe_r,probe_r)
-	correct = (left, left, right, right, left, left, right, right)
+	correct = ('<', '<', '>', '>', '<', '<', '>', '>')
 	
 	# return a string of spaces matching probe word length, with probe character at random position
 	def probe_string(probe_word, probe):
