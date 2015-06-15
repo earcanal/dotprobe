@@ -59,13 +59,24 @@ define sequence block_sequence
 define inline_script config
 	set _prepare ""
 	___run__
-	p          = self.get('subject_nr')
+	p = self.get('subject_nr')
+
+	# participant config
+	conf_f     = exp.experiment_path + '/p' + str(p) + '.conf'
+	inf        = open(conf_f,'r')
+	for line in inf.readlines():
+	  line = line.rstrip()
+	  var  = line.split(' ')
+	  exp.set(var[0], var[1])
+	inf.close()
+	gap_px = self.get('gap_px')
+
 	schedule_f = exp.experiment_path + '/schedule_' + str(p)
 	session    = self.get('session')
 	inf = open(schedule_f,'r')
 	for line in inf.readlines():
-		line = line.rstrip()
-		schedule = line.split(' ')
+	  line = line.rstrip()
+	  schedule = line.split(' ')
 	inf.close()
 	
 	# schedule is indexed from 0
@@ -225,8 +236,8 @@ define inline_script set_iti
 define inline_script set_stimuli
 	___prepare__
 	import random, re
-	top     = 76/2 + 125
-	bottom  = -76/2 - 125
+	top     = gap_px/2 + 125
+	bottom  = -gap_px/2 - 125
 	left    = 'left'
 	right   = 'right'
 	probe_l = u'<'
