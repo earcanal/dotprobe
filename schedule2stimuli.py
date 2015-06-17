@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-import csv
-import pprint
-import pdb
+import csv, pprint, pdb, argparse
+parser = argparse.ArgumentParser(description='Generate stimulus schedule for participant.')
+parser.add_argument('p', metavar='p', type=int, help='Participant number')
+args = parser.parse_args()
 
-p = 0
+p = args.p
 
 # read schedule (from SCRT)
 schedule_f = 'schedule_' + str(p)
