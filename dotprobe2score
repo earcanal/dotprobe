@@ -3,11 +3,6 @@
 use strict;
 use warnings;
 use Text::CSV;
-#use Spreadsheet::Read;
-#my $book  = ReadData("p1s1.ods");
-#my $sheet = $book->[1];           # first datasheet
-#my $cell  = $sheet->{O3};         # content of field A3 of sheet 1
-#print "$cell\n";
 use Math::NumberCruncher;
 use Data::Dumper;
 use Pod::Usage;
@@ -27,9 +22,6 @@ my @ipairs = @$row;
 shift @ipairs;
 my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
 my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
-#print join(',',@ipairs),"\n";
-#print join(',',@iword),"\n";
-#print join(',',@ipair),"\n";
  
 # foreach participant
 # foreach data file
