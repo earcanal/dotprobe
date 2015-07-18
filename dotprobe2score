@@ -7,17 +7,24 @@ use Text::CSV;
 use Math::NumberCruncher;
 use Data::Dumper;
 use Pod::Usage;
-
-pod2usage() unless $ARGV[0] && $ARGV[1];
+use Getopt::Long;
 
 my $debug = 1;
 
-my @rows;
+my($participant,$sessions);
+GetOptions ("p=i" => \$participant,
+	   "s=i" => \$sessions)
+or die("Error in command line arguments\n");
+
+
+pod2usage() unless $participant && $sessions && $ARGV[0] && $ARGV[1];
+my($iwords_f,$session_path) = @ARGV;
+
+
 my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
                  or die "Cannot use CSV: ".Text::CSV->error_diag ();
 
 # iwords
-my $iwords_f = $ARGV[0];
 open my $iwords, "<:encoding(utf8)", $iwords_f or die "$iwords_f $!";
 my $row = $csv->getline($iwords); # ignore column headers
 $row = $csv->getline($iwords);
@@ -26,98 +33,110 @@ shift @ipairs;
 my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
 my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
  
-# foreach participant
-# foreach data file
-
-# session data
-my $session_file = $ARGV[1];
-open my $session, "<:encoding(utf8)", $session_file or die "$session_file $!";
-#$csv->print ($session, $_) for @rows;
-#close $session or die "new.csv: $!";
-
-$row = $csv->getline($session);    # ignore datestamp row
-$row = $csv->getline($session);
-$csv->column_names($row);          # column headings
-my @rt;
-while (my $row = $csv->getline_hr($session)) {
-  if (! $row->{correct}) { # incorrect responses
-    if ($debug > 1) {
-      print STDERR 'Rejecting incorrect trial ',$row->{count_ITI};
-      print STDERR " (ABM)" if $row->{abm};
-      print "\n";
-    }
-    next;
-  }
-  push(@rows,$row);
-  push(@rt,$row->{response_time});
-  # add N pairs column
-  #if $csv->eof # FIXME: ignore last row
+my $iscores_f = "${session_path}/p${participant}_iscores";
+my $nscores_f = "${session_path}/p${participant}_nscores";
+open my $iscores, ">$iscores_f" or die "$iscores_f $!";
+open my $nscores, ">$nscores_f" or die "$nscores_f $!";
+for (my $session = 1; $session <= $sessions; $session++) {
+  my($phase,$n_score,$i_score) = score($participant,$session);
+  print $nscores "$phase\t$n_score\n" or die($!);
+  print $iscores "$phase\t$i_score\n" or die($!);
 }
+close($nscores);
+close($iscores);
 
+sub score {
+  my($p,$s)     = @_;
+  my $session_f = "$session_path/p${p}s${s}.csv";
+  my @rows      = ();
+  open my $session, "<:encoding(utf8)", $session_f or die "$session_f $!";
 
-# include all trials (regardless of probe/word location) when working out values +/-3 SD and excluding values
-my $mean    = Math::NumberCruncher::Mean(\@rt);
-my $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
-print "mean: $mean, StdDev: $std_dev\n";
-my $upper = $mean + 3 * $std_dev;
-my $lower = $mean - 3 * $std_dev;
-print "lower = $lower, upper = $upper\n";
+  $row = $csv->getline($session);    # ignore datestamp row
+  $row = $csv->getline($session);
+  $csv->column_names($row);          # column headings
+  while (my $row = $csv->getline_hr($session)) { push(@rows,$row) }
+  pop(@rows);                        # ignore datestamp row
 
-@rt = ();
-$debug && print STDERR "rows = ",$#rows + 1,"\n";
-for (my $i = $#rows; $i >= 0; $i--) {
-  $debug > 3 && print "i = $i\n";
-  my $row = $rows[$i];
-  if ($row->{abm}) {   # AB training trials
-    $debug > 1 && print STDERR 'Rejecting AB trial ',$row->{count_ITI},"\n";
-    splice @rows,$i,1; # discard
-    next;
-  }
-
-  my $rt = $row->{response_time};
-  if ($rt < $lower or $rt > $upper) {  # throw away any values -/+ 3 SDs
-    print STDERR 'Rejecting fast/slow RT trial ',$row->{count_ITI}," (${rt}ms)\n";
-    splice @rows,$i,1;
-  } else {
-    push(@rt,$rt);
-  }
-}
-$debug && print STDERR "rows = ",$#rows + 1,"\n";
-
-$mean    = Math::NumberCruncher::Mean(\@rt);
-$std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
-print "mean: $mean, StdDev: $std_dev\n";
-
-# calculate scores
-my($i_same,$i_diff,$n_same,$n_diff,$n_score,$i_score);
-for my $row (@rows) {
-  # distinguish I pairs from N pairs
-  # add I pairs column
-    # i_score = [sum(IuPl + IlPu) - sum(IuPu + IlPl)]/2
-  if ($row->{word_y} ne $row->{probe_y} ) { # different word/probe location 
-    if (grep(/^$row->{word}/,@iword)) {  # I word
-      $debug > 1 && print 'I: ';
-      $i_same += $row->{response_time};
-    } else {                             # N word
-      $debug > 1 && print 'N: ';
-      $n_same += $row->{response_time};
+  my @rt;
+  my $abm = 0;
+  for (my $i = $#rows; $i >= 0; $i--) {
+    my $row = $rows[$i];
+    if (! $row->{correct}) { # incorrect response
+      if ($debug) {
+	print STDERR 'Rejecting incorrect trial ',$row->{count_ITI};
+	print STDERR " (ABM)" if $row->{abm};
+	print "\n";
+      }
+      $abm++ if $row->{abm};
+      splice @rows,$i,1;     # reject
+    } else {
+      push(@rt,$row->{response_time});
     }
-    $debug > 1 && print $row->{word},'-',$row->{pair},"\n";
-  } else {                                  # same word/probe location 
-    if (grep(/^$row->{word}/,@iword)) {  # I word
-      $debug > 1 && print 'I: ';
-      $i_diff += $row->{response_time};
-    } else {                             # N word
-      $debug > 1 && print 'N: ';
-      $n_diff += $row->{response_time};
-    }
-    $debug > 1 && print $row->{word},'-',$row->{pair},"\n";
   }
-}
-$n_score = ($n_diff - $n_same) / 2;
-$i_score = ($i_diff - $i_same) / 2;
 
-print "i-score = $i_score, n-score = $n_score\n";
+
+  # include all trials (regardless of probe/word location) when working out values +/-3 SD and excluding values
+  my $mean    = Math::NumberCruncher::Mean(\@rt);
+  my $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
+  $debug && print "mean: $mean, StdDev: $std_dev\n";
+  my $upper = $mean + 3 * $std_dev;
+  my $lower = $mean - 3 * $std_dev;
+  $debug && print STDERR "lower = $lower, upper = $upper\n";
+
+  @rt = ();
+  $debug && print STDERR "rows = ",$#rows + 1,"\n";
+  for (my $i = $#rows; $i >= 0; $i--) {
+    $debug > 3 && print "i = $i\n";
+    my $row = $rows[$i];
+    if ($row->{abm}) {   # AB training trials
+      $debug > 1 && print STDERR 'Rejecting AB trial ',$row->{count_ITI},"\n";
+      splice @rows,$i,1; # discard
+      next;
+    }
+
+    my $rt = $row->{response_time};
+    if ($rt < $lower or $rt > $upper) {  # throw away any values -/+ 3 SDs
+      $debug && print STDERR 'Rejecting fast/slow RT trial ',$row->{count_ITI}," (${rt}ms)\n";
+      splice @rows,$i,1;
+    } else {
+      push(@rt,$rt);
+    }
+  }
+  $debug && print STDERR "rows = ",$#rows + 1,"\n";
+
+  $mean    = Math::NumberCruncher::Mean(\@rt);
+  $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
+  $debug && print "mean: $mean, StdDev: $std_dev\n";
+
+  # score = [sum(NuPl + NlPu) - sum(NuPu + NlPl)]/2
+  my($i_same,$i_diff,$n_same,$n_diff,$n_score,$i_score);
+  for my $row (@rows) {
+    if ($row->{word_y} ne $row->{probe_y} ) { # different word/probe location 
+      if (grep(/^$row->{word}/,@iword)) {  # I word
+	$debug > 1 && print 'I: ';
+	$i_same += $row->{response_time};
+      } else {                             # N word
+	$debug > 1 && print 'N: ';
+	$n_same += $row->{response_time};
+      }
+      $debug > 1 && print $row->{word},'-',$row->{pair},"\n";
+    } else {                                  # same word/probe location 
+      if (grep(/^$row->{word}/,@iword)) {  # I word
+	$debug > 1 && print 'I: ';
+	$i_diff += $row->{response_time};
+      } else {                             # N word
+	$debug > 1 && print 'N: ';
+	$n_diff += $row->{response_time};
+      }
+      $debug > 1 && print $row->{word},'-',$row->{pair},"\n";
+    }
+  }
+  $n_score = ($n_diff - $n_same) / 2;
+  $i_score = ($i_diff - $i_same) / 2;
+
+  my $phase = $abm ? 'B' : 'A';
+  return($phase,$n_score,$i_score);
+}
 __END__
 
 =head1 NAME
@@ -126,7 +145,7 @@ dotprobe2score - Convert dot-probe data files to scores consumable by SCRT
 
 =head1 SYNOPSIS
 
-dotprobe2score path/to/iwords.csv path/to/p1s1.csv
+dotprobe2score -p participant -s sessions path/to/iwords.csv path/to/data
 
 =head1 DESCRIPTION
 
