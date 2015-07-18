@@ -9,6 +9,8 @@ use Pod::Usage;
 
 pod2usage() unless $ARGV[0] && $ARGV[1];
 
+my $debug = 1;
+
 my @rows;
 my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
                  or die "Cannot use CSV: ".Text::CSV->error_diag ();
@@ -32,7 +34,7 @@ open my $session, "<:encoding(utf8)", $session_file or die "$session_file $!";
 #$csv->print ($session, $_) for @rows;
 #close $session or die "new.csv: $!";
 
-$row = $csv->getline($session); # ignore datestamp row
+$row = $csv->getline($session);    # ignore datestamp row
 $row = $csv->getline($session);
 $csv->column_names($row);          # column headings
 my @rt;
@@ -44,6 +46,7 @@ while (my $row = $csv->getline_hr($session)) {
   } else {                             # N words
   }
   # FIXME: distinguish AB from dot-probe
+  push(@rows,$row);
   push(@rt,$row->{response_time});
   # add N pairs column
   #if $csv->eof # FIXME: ignore last row
@@ -55,7 +58,24 @@ while (my $row = $csv->getline_hr($session)) {
 # include all trials (regardless of probe/word location) when working out values +/-3 SD and excluding values
 my $mean    = Math::NumberCruncher::Mean(\@rt);
 my $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
-# throw away any values +/- 3 SDs
+print "mean: $mean, StdDev: $std_dev\n";
+my $upper = $mean + 3 * $std_dev;
+my $lower = $mean - 3 * $std_dev;
+print "lower = $lower, upper = $upper\n";
+
+@rt = ();
+for (my $i = 0; $i <= $#rows; $i++) {
+  my $rt = $rows[$i]->{response_time};
+  if ($rt < $lower or $rt > $upper) {
+    print STDERR 'Rejecting trial ',$rows[$i]->{count_ITI}," (${rt}ms)\n";
+    splice @rows,$i,1; # throw away any values +/- 3 SDs
+  } else {
+    push(@rt,$rt);
+  }
+}
+
+$mean    = Math::NumberCruncher::Mean(\@rt);
+$std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
 print "mean: $mean, StdDev: $std_dev\n";
 
 # calculate score
