@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Text::CSV;
+#use Spreadsheet::Read;
+#my $book  = ReadData("p1s1.ods");
+#my $sheet = $book->[1];           # first datasheet
+#my $cell  = $sheet->{O3};         # content of field A3 of sheet 1
+#print "$cell\n";
+use Math::NumberCruncher;
+use Data::Dumper;
+use Pod::Usage;
+
+pod2usage() unless $ARGV[0] && $ARGV[1];
+
+my @rows;
+my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
+                 or die "Cannot use CSV: ".Text::CSV->error_diag ();
+
+# iwords
+my $iwords_f = $ARGV[0];
+open my $iwords, "<:encoding(utf8)", $iwords_f or die "$iwords_f $!";
+my $row = $csv->getline($iwords); # ignore column headers
+$row = $csv->getline($iwords);
+my @ipairs = @$row;
+shift @ipairs;
+my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
+my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
+#print join(',',@ipairs),"\n";
+#print join(',',@iword),"\n";
+#print join(',',@ipair),"\n";
+ 
+# foreach participant
+# foreach data file
+
+# session data
+my $session_file = $ARGV[1];
+open my $session, "<:encoding(utf8)", $session_file or die "$session_file $!";
+#$csv->print ($session, $_) for @rows;
+#close $session or die "new.csv: $!";
+
+$row = $csv->getline($session); # ignore datestamp row
+$row = $csv->getline($session);
+$csv->column_names($row);          # column headings
+my @rt;
+while (my $row = $csv->getline_hr($session)) {
+  next if ! $row->{correct}; # ignore incorrect responses
+  # distinguish I pairs from N pairs
+  # add I pairs column
+  if (grep(/^$row->{word}/,@iword)) {  # I word
+  } else {                             # N words
+  }
+  # FIXME: distinguish AB from dot-probe
+  push(@rt,$row->{response_time});
+  # add N pairs column
+  #if $csv->eof # FIXME: ignore last row
+  #print join(',',@$row),"\n";
+  #print $row->{word},' ',$row->{pair},"\n";
+}
+
+
+# include all trials (regardless of probe/word location) when working out values +/-3 SD and excluding values
+my $mean    = Math::NumberCruncher::Mean(\@rt);
+my $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
+# throw away any values +/- 3 SDs
+print "mean: $mean, StdDev: $std_dev\n";
+
+# calculate score
+#$score = [sum(NuPl + NlPu) - sum(NuPu + NlPl)]/2
+#
+__END__
+
+=head1 NAME
+
+dotprobe2score - Convert dot-probe data files to scores consumable by SCRT
+
+=head1 SYNOPSIS
+
+dotprobe2score path/to/iwords.csv path/to/p1s1.csv
+
+=head1 DESCRIPTION
+
+=cut
