@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# vi: ft=perl
 
 use strict;
 use warnings;
@@ -39,19 +40,23 @@ $row = $csv->getline($session);
 $csv->column_names($row);          # column headings
 my @rt;
 while (my $row = $csv->getline_hr($session)) {
-  next if ! $row->{correct}; # ignore incorrect responses
+  if (! $row->{correct}) { # incorrect responses
+    if ($debug > 1) {
+      print STDERR 'Rejecting incorrect trial ',$row->{count_ITI};
+      print STDERR " (ABM)" if $row->{abm};
+      print "\n";
+    }
+    next;
+  }
   # distinguish I pairs from N pairs
   # add I pairs column
   if (grep(/^$row->{word}/,@iword)) {  # I word
   } else {                             # N words
   }
-  # FIXME: distinguish AB from dot-probe
   push(@rows,$row);
   push(@rt,$row->{response_time});
   # add N pairs column
   #if $csv->eof # FIXME: ignore last row
-  #print join(',',@$row),"\n";
-  #print $row->{word},' ',$row->{pair},"\n";
 }
 
 
@@ -64,22 +69,35 @@ my $lower = $mean - 3 * $std_dev;
 print "lower = $lower, upper = $upper\n";
 
 @rt = ();
-for (my $i = 0; $i <= $#rows; $i++) {
-  my $rt = $rows[$i]->{response_time};
-  if ($rt < $lower or $rt > $upper) {
-    print STDERR 'Rejecting trial ',$rows[$i]->{count_ITI}," (${rt}ms)\n";
-    splice @rows,$i,1; # throw away any values +/- 3 SDs
+$debug && print STDERR "rows = ",$#rows + 1,"\n";
+for (my $i = $#rows; $i >= 0; $i--) {
+  $debug > 3 && print "i = $i\n";
+  my $row = $rows[$i];
+  if ($row->{abm}) {   # AB training trials
+    $debug > 1 && print STDERR 'Rejecting AB trial ',$row->{count_ITI},"\n";
+    splice @rows,$i,1; # discard
+    next;
+  }
+
+  my $rt = $row->{response_time};
+  if ($rt < $lower or $rt > $upper) {  # throw away any values -/+ 3 SDs
+    print STDERR 'Rejecting fast/slow RT trial ',$row->{count_ITI}," (${rt}ms)\n";
+    splice @rows,$i,1;
   } else {
     push(@rt,$rt);
   }
 }
+$debug && print STDERR "rows = ",$#rows + 1,"\n";
 
 $mean    = Math::NumberCruncher::Mean(\@rt);
 $std_dev = Math::NumberCruncher::StandardDeviation(\@rt,1); # no decimal places
 print "mean: $mean, StdDev: $std_dev\n";
 
-# calculate score
+# calculate scores
+# N-words
 #$score = [sum(NuPl + NlPu) - sum(NuPu + NlPl)]/2
+# I-words
+#$score = [sum(IuPl + IlPu) - sum(IuPu + IlPl)]/2
 #
 __END__
 
