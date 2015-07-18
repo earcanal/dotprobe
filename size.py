@@ -2,7 +2,7 @@
 
 # calculate the number of pixels for a stimulus
 # fixed: viewer distance, vertical resolution, visual angle
-# argv[1] = vertical screen height
+# argv[1] = vertical screen height (cm)
 
 from math import atan2, degrees
 import sys
