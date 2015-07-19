@@ -8,6 +8,7 @@ use Math::NumberCruncher;
 use Data::Dumper;
 use Pod::Usage;
 use Getopt::Long;
+use List::Util qw(sum);
 
 my $debug = 1;
 
@@ -33,17 +34,56 @@ shift @ipairs;
 my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
 my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
  
+# dot-probe scores
 my $iscores_f = "${session_path}/p${participant}_iscores";
 my $nscores_f = "${session_path}/p${participant}_nscores";
 open my $iscores, ">$iscores_f" or die "$iscores_f $!";
 open my $nscores, ">$nscores_f" or die "$nscores_f $!";
+my %session;
 for (my $session = 1; $session <= $sessions; $session++) {
   my($phase,$n_score,$i_score) = score($participant,$session);
+  $session{$session} = $phase;
   print $nscores "$phase\t$n_score\n" or die($!);
   print $iscores "$phase\t$i_score\n" or die($!);
 }
 close($nscores);
 close($iscores);
+close($iwords);
+
+# GRS & PANAS scores
+if ($ARGV[2]) {
+  my $measures_f = $ARGV[2];
+  open my $measures, "<:encoding(utf8)", $measures_f or die "$measures_f $!";
+  my $row = $csv->getline($measures);
+  $csv->column_names($row); ## CAVEAT: Export from Lime Survey with question code headings
+  my $grs_scores_f   = "${session_path}/p${participant}_grs_scores";
+  my $panas_scores_f = "${session_path}/p${participant}_panas_scores";
+  my(%panas,%grs);
+  while (my $row = $csv->getline_hr($measures)) {
+    $debug && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
+    if ($row->{participant} eq $participant && $row->{lastpage} eq 3) {
+      # GRS total (7Q, 1-7)
+      my @keys = sort(grep(/^panas/,keys(%$row)));
+      #$debug && print STDERR join(',',@keys), "\n";
+      my @scores = map {$row->{$_}} @keys;
+      $panas{$row->{session}} = sum(@scores);
+      # PANAS total (14Q, 1-5)
+      @keys   = sort(grep(/^grs/,keys(%$row)));
+      @scores = map {$row->{$_}} @keys;
+      $grs{$row->{session}} = sum(@scores);
+    }
+  }
+  close($measures);
+  open my $grs_scores, ">$grs_scores_f" or die "$grs_scores_f $!";
+  open my $panas_scores, ">$panas_scores_f" or die "$panas_scores_f $!";
+  for my $session ( sort {$a <=> $b} keys %session) {
+    $debug && print "Session $session ($session{$session}): grs = $grs{$session}, panas = $panas{$session}\n";
+    print $grs_scores "$session{$session}\t$grs{$session}\n";
+    print $panas_scores "$session{$session}\t$panas{$session}\n";
+  }
+  close($grs_scores);
+  close($panas_scores);
+}
 
 sub score {
   my($p,$s)     = @_;
@@ -55,6 +95,7 @@ sub score {
   $row = $csv->getline($session);
   $csv->column_names($row);          # column headings
   while (my $row = $csv->getline_hr($session)) { push(@rows,$row) }
+  close($session);
   pop(@rows);                        # ignore datestamp row
 
   my @rt;
