@@ -62,7 +62,8 @@ if ($ARGV[2]) {
   while (my $row = $csv->getline_hr($measures)) {
     $debug && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
     if ($row->{participant} eq $participant && $row->{lastpage} eq 3) {
-      # GRS total (7Q, 1-7)
+      # GRS total (7Q, 1-7, 5-7 reversed)
+      for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
       my @keys = sort(grep(/^panas/,keys(%$row)));
       #$debug && print STDERR join(',',@keys), "\n";
       my @scores = map {$row->{$_}} @keys;
