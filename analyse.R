@@ -31,7 +31,7 @@ printf("I-words\n");
 jpeg('p1_iwords.jpg')
 iwords <- "/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/data/p1_iscores"
 #graph.TREND(design,'LSR','mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (I-word pairs)")
-graph.CL(design,'mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (I-word pairs)")
+graph.CL(design,'mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (ms)")
 dev.off()
 p <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = read.table(iwords))
 pnd <- ES(design,ES,data = read.table(iwords))
@@ -41,7 +41,7 @@ printf("p = %0.3f\nPND = %0.3f\n",p,pnd)
 print("N-words");
 jpeg('p1_nwords.jpg')
 nwords <- "/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/data/p1_nscores"
-graph.CL(design,'mean',data=read.table(nwords),xlab="Measurement Times",ylab="Attentional Bias Score (N-word pairs)")
+graph.CL(design,'mean',data=read.table(nwords),xlab="Measurement Times",ylab="Attentional Bias Score (ms)")
 dev.off()
 p <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = read.table(nwords))
 pnd <- ES(design,ES,data = read.table(nwords))
