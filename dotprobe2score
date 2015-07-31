@@ -10,89 +10,138 @@ use Pod::Usage;
 use Getopt::Long;
 use List::Util qw(sum);
 
-my $debug = 1;
+my $debug = 0;
 
 my($participant,$sessions);
 GetOptions ("p=i" => \$participant,
-	   "s=i" => \$sessions)
+	    "s=i" => \$sessions,
+	    "d=i" => \$debug)
 or die("Error in command line arguments\n");
 
+my $datadir     = '/media/paul/2E95-1293/study/participants';
+my %participants; # sessions / session_number => phase, ab_i, ab_n, grs, panas
+$participants{1}->{sessions} = 35;
+$participants{5}->{sessions} = 22;
+$participants{6}->{sessions} = 16;
+$participants{7}->{sessions} = 25;
+$participants{8}->{sessions} = 23;
+$participants{9}->{sessions} = 17;
+$participants{10}->{sessions} = 19;
+$participants{11}->{sessions} = 16;
+$participants{12}->{sessions} = 17;
+$participants{13}->{sessions} = 13;
+$participants{15}->{sessions} = 14;
+$participants{16}->{sessions} = 13;
+$participants{18}->{sessions} = 9;
+$participants{19}->{sessions} = 4;
 
-pod2usage() unless $participant && $sessions && $ARGV[0] && $ARGV[1];
-my($iwords_f,$session_path) = @ARGV;
-
+#pod2usage() unless $participant && $sessions && $ARGV[0] && $ARGV[1];
+#my($iwords_f,$session_path) = @ARGV;
 
 my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
                  or die "Cannot use CSV: ".Text::CSV->error_diag ();
 
-# iwords
-open my $iwords, "<:encoding(utf8)", $iwords_f or die "$iwords_f $!";
-my $row = $csv->getline($iwords); # ignore column headers
-$row = $csv->getline($iwords);
-my @ipairs = @$row;
-shift @ipairs;
-my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
-my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
- 
-# dot-probe scores
-my $iscores_f = "${session_path}/p${participant}_iscores";
-my $nscores_f = "${session_path}/p${participant}_nscores";
-open my $iscores, ">$iscores_f" or die "$iscores_f $!";
-open my $nscores, ">$nscores_f" or die "$nscores_f $!";
-my %session;
-for (my $session = 1; $session <= $sessions; $session++) {
-  my($phase,$n_score,$i_score) = score($participant,$session);
-  $session{$session} = $phase;
-  print $nscores "$phase\t$n_score\n" or die($!);
-  print $iscores "$phase\t$i_score\n" or die($!);
-}
-close($nscores);
-close($iscores);
-close($iwords);
+for my $participant (keys(%participants)) {
+  print STDERR "Processing data for participant $participant\n";
 
-# GRS & PANAS scores
-if ($ARGV[2]) {
-  my $measures_f = $ARGV[2];
+  my $iwords_f     = "${datadir}/${participant}/iwords.csv";
+  my $session_path = "${datadir}/${participant}/dotprobe";
+  # iwords
+  open my $iwords, "<:encoding(utf8)", $iwords_f or die "$iwords_f $!";
+  my $row = $csv->getline($iwords); # ignore column headers
+  $row = $csv->getline($iwords);
+  my @ipairs = @$row;
+  shift @ipairs;
+  my @ipair = @ipairs[grep $_ % 2, 0..$#ipairs];       # odd-index  elements
+  my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
+   
+  # dot-probe scores
+  my $iscores_f = "${session_path}/p${participant}_iscores";
+  my $nscores_f = "${session_path}/p${participant}_nscores";
+  open my $iscores, ">$iscores_f" or die "$iscores_f $!";
+  open my $nscores, ">$nscores_f" or die "$nscores_f $!";
+  my %session;
+  for (my $session = 1; $session <= $participants{$participant}->{sessions}; $session++) {
+    my($phase,$n_score,$i_score) = score($session_path,\@iword,$participant,$session);
+    $participants{$participant}->{$session}->{phase} = $phase;
+    $participants{$participant}->{$session}->{ab_n} = $n_score;
+    $participants{$participant}->{$session}->{ab_i} = $i_score;
+    print $nscores "$phase\t$n_score\n" or die($!);
+    print $iscores "$phase\t$i_score\n" or die($!);
+  }
+  close($nscores);
+  close($iscores);
+  close($iwords);
+
+  # GRS & PANAS scores
+  my $measures_f = "${datadir}/measures.csv";
   open my $measures, "<:encoding(utf8)", $measures_f or die "$measures_f $!";
-  my $row = $csv->getline($measures);
+  $row = $csv->getline($measures);
   $csv->column_names($row); ## CAVEAT: Export from Lime Survey with question code headings
   my $grs_scores_f   = "${session_path}/p${participant}_grs_scores";
   my $panas_scores_f = "${session_path}/p${participant}_panas_scores";
-  my(%panas,%grs);
+  my @sessions       = ();
   while (my $row = $csv->getline_hr($measures)) {
     $debug && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
     if ($row->{participant} eq $participant && $row->{lastpage} eq 3) {
+      my $session = $row->{session};
+      push(@sessions,$session);
       # GRS total (7Q, 1-7, 5-7 reversed)
       for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
       my @keys = sort(grep(/^panas/,keys(%$row)));
       #$debug && print STDERR join(',',@keys), "\n";
       my @scores = map {$row->{$_}} @keys;
-      $panas{$row->{session}} = sum(@scores);
+      $participants{$participant}->{$row->{session}}->{panas} = sum(@scores);
       # PANAS total (14Q, 1-5)
       @keys   = sort(grep(/^grs/,keys(%$row)));
       @scores = map {$row->{$_}} @keys;
-      $grs{$row->{session}} = sum(@scores);
+      $participants{$participant}->{$row->{session}}->{grs} = sum(@scores);
     }
   }
   close($measures);
   open my $grs_scores, ">$grs_scores_f" or die "$grs_scores_f $!";
   open my $panas_scores, ">$panas_scores_f" or die "$panas_scores_f $!";
-  for my $session ( sort {$a <=> $b} keys %session) {
-    $debug && print "Session $session ($session{$session}): grs = $grs{$session}, panas = $panas{$session}\n";
-    print $grs_scores "$session{$session}\t$grs{$session}\n";
-    print $panas_scores "$session{$session}\t$panas{$session}\n";
+  for my $s ( sort {$a <=> $b} @sessions) {
+    my($phase,$ab_i,$ab_n,$grs,$panas) = map { $participants{$participant}->{$s}->{$_} } qw/phase ab_i ab_n grs panas/;
+    $debug && print "Session $s ($phase): grs = $grs, panas = $panas\n";
+    print $grs_scores "$phase\t$grs\n";
+    print $panas_scores "$phase\t$panas\n";
   }
   close($grs_scores);
   close($panas_scores);
 }
 
+# MBD
+use List::MoreUtils qw/natatime/ ;
+my @p    = sort {$a <=> $b} keys %participants;
+my $iter = natatime 2, @p; # FIXIT: SCRT.graph complains with units > 5
+my $i    = 0;
+while (my @chunk = $iter->()) {
+  my $mbd_grs_f = "${datadir}/mbd_grs_${i}";
+  open my $mbd_grs, ">$mbd_grs_f" or die "$mbd_grs_f $!";
+  for my $s (1..35) {
+    for my $p (@chunk) {
+      my $last  = $participants{$p}->{sessions};
+      # replace missing data with last observation
+      my $phase = $participants{$p}->{$s}->{phase} || $participants{$p}->{$last}->{phase};
+      my $grs   = $participants{$p}->{$s}->{grs}   || $participants{$p}->{$last}->{grs};
+      print $mbd_grs "$phase\t$grs";
+      print $mbd_grs ($p ne $chunk[$#chunk]) ? "\t" : "\n";
+    }
+  }
+  print $mbd_grs "\n";
+  close($mbd_grs);
+  $i++;
+}
+
 sub score {
-  my($p,$s)     = @_;
+  my($session_path,$iword,$p,$s) = @_;
   my $session_f = "$session_path/p${p}s${s}.csv";
+  my @iword     = @$iword;
   my @rows      = ();
   open my $session, "<:encoding(utf8)", $session_f or die "$session_f $!";
 
-  $row = $csv->getline($session);    # ignore datestamp row
+  my $row = $csv->getline($session); # ignore datestamp row
   $row = $csv->getline($session);
   $csv->column_names($row);          # column headings
   while (my $row = $csv->getline_hr($session)) { push(@rows,$row) }
