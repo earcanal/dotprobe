@@ -78,7 +78,7 @@ for my $participant (keys(%participants)) {
   my $panas_scores_f = "${p_dir}/p${participant}_panas_scores";
   my @sessions       = ();
   while (my $row = $csv->getline_hr($measures)) {
-    $debug && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
+    ($debug > 1) && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
     if ($row->{participant} eq $participant && $row->{lastpage} eq 3) {
       my $session = $row->{session};
       push(@sessions,$session);
@@ -99,7 +99,7 @@ for my $participant (keys(%participants)) {
   open my $panas_scores, ">$panas_scores_f" or die "$panas_scores_f $!";
   for my $s ( sort {$a <=> $b} @sessions) {
     my($phase,$ab_i,$ab_n,$grs,$panas) = map { $participants{$participant}->{$s}->{$_} } qw/phase ab_i ab_n grs panas/;
-    $debug && print "Session $s ($phase): grs = $grs, panas = $panas\n";
+    $debug && print STDERR "Session $s ($phase): grs = $grs, panas = $panas\n";
     print $grs_scores "$phase\t$grs\n";
     print $panas_scores "$phase\t$panas\n";
   }
@@ -130,16 +130,23 @@ while (my @chunk = $iter->()) {
   $i++;
 }
 
+=head2 score($session_path,$iword,$p,$s)
+
+Calculate ABM score for a session.
+
+=cut
+
 sub score {
   my($session_path,$iword,$p,$s) = @_;
-  my $session_f = "$session_path/p${p}s${s}.csv";
-  my @iword     = @$iword;
-  my @rows      = ();
-  open my $session, "<:encoding(utf8)", $session_f or die "$session_f $!";
 
+  my $session_f = "$session_path/p${p}s${s}.csv";
+  open my $session, "<:encoding(utf8)", $session_f or die "$session_f $!";
   my $row = $csv->getline($session); # ignore datestamp row
-  $row = $csv->getline($session);
+  $row    = $csv->getline($session);
   $csv->column_names($row);          # column headings
+
+  my @iword = @$iword;
+  my @rows  = ();
   while (my $row = $csv->getline_hr($session)) { push(@rows,$row) }
   close($session);
   pop(@rows);                        # ignore datestamp row
@@ -148,13 +155,13 @@ sub score {
   my $abm = 0;
   for (my $i = $#rows; $i >= 0; $i--) {
     my $row = $rows[$i];
+    $abm++ if $row->{abm};
     if (! $row->{correct}) { # incorrect response
       if ($debug) {
-	print STDERR 'Rejecting incorrect trial ',$row->{count_ITI};
+	print STDERR 'Rejecting incorrect trial ',$row->{count_ITI},"\n";
 	print STDERR " (ABM)" if $row->{abm};
 	print "\n";
       }
-      $abm++ if $row->{abm};
       splice @rows,$i,1;     # reject
     } else {
       push(@rt,$row->{response_time});
@@ -232,7 +239,7 @@ dotprobe2score - Convert dot-probe data files to scores consumable by SCRT
 
 =head1 SYNOPSIS
 
-dotprobe2score -p participant -s sessions path/to/iwords.csv path/to/data
+dotprobe2score
 
 =head1 DESCRIPTION
 
