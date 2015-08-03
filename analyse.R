@@ -22,7 +22,7 @@ limit  <- 8
 
 foo <- c(1,7,8,35,28,25)
 sessions <- matrix(foo,3,2)
-
+ylab <- list(i="I-Word Attentional Bias Score (ms)",n="N-Word Attentional Bias Score (ms)",grs="GRS Score",panas="I-PANAS-SF ++ Score")
 X11(type="cairo")
 
 # generate plots for each outcome for each participant
@@ -30,13 +30,11 @@ for (participant in participants) {
   printf("Participant %s\n",participant);
   p_dir <- paste(datadir,participant,'/',sep='')
   # FIXME: split PA/NA
-  # FIXME: dv specific ylab
   for (dv in c('i','n','grs','panas')) {
     printf("DV: %s\n",dv);
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     #graph.TREND(design,'LSR','mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (I-word pairs)")
-    # FIXME: dv specific ylab
-    graph.CL(design,'mean',data=read.table(dv_f),xlab="Measurement Times",ylab="Attentional Bias Score (ms)")
+    graph.CL(design,'mean',data=read.table(dv_f),xlab="Measurement Times",ylab=ylab[[dv]])
     savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = read.table(dv_f))
     pnd <- ES(design,ES,data = read.table(dv_f))
