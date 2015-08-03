@@ -33,7 +33,7 @@ $participants{13}->{sessions} = 13;
 $participants{15}->{sessions} = 14;
 $participants{16}->{sessions} = 13;
 $participants{18}->{sessions} = 9;
-$participants{19}->{sessions} = 4;
+$participants{19}->{sessions} = 5;
 
 #pod2usage() unless $participant && $sessions && $ARGV[0] && $ARGV[1];
 #my($iwords_f,$session_path) = @ARGV;
@@ -44,7 +44,8 @@ my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
 for my $participant (keys(%participants)) {
   print STDERR "Processing data for participant $participant\n";
 
-  my $iwords_f     = "${datadir}/${participant}/iwords.csv";
+  my $p_dir        = "${datadir}/${participant}";
+  my $iwords_f     = "${p_dir}/iwords.csv";
   my $session_path = "${datadir}/${participant}/dotprobe";
   # iwords
   open my $iwords, "<:encoding(utf8)", $iwords_f or die "$iwords_f $!";
@@ -56,8 +57,8 @@ for my $participant (keys(%participants)) {
   my @iword = @ipairs[grep !($_ % 2), 0..$#ipairs];    # even-index elements
    
   # dot-probe scores
-  my $iscores_f = "${session_path}/p${participant}_iscores";
-  my $nscores_f = "${session_path}/p${participant}_nscores";
+  my $iscores_f = "${p_dir}/p${participant}_i_scores";
+  my $nscores_f = "${p_dir}/p${participant}_n_scores";
   open my $iscores, ">$iscores_f" or die "$iscores_f $!";
   open my $nscores, ">$nscores_f" or die "$nscores_f $!";
   my %session;
@@ -78,8 +79,8 @@ for my $participant (keys(%participants)) {
   open my $measures, "<:encoding(utf8)", $measures_f or die "$measures_f $!";
   $row = $csv->getline($measures);
   $csv->column_names($row); ## CAVEAT: Export from Lime Survey with question code headings
-  my $grs_scores_f   = "${session_path}/p${participant}_grs_scores";
-  my $panas_scores_f = "${session_path}/p${participant}_panas_scores";
+  my $grs_scores_f   = "${p_dir}/p${participant}_grs_scores";
+  my $panas_scores_f = "${p_dir}/p${participant}_panas_scores";
   my @sessions       = ();
   while (my $row = $csv->getline_hr($measures)) {
     $debug && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
@@ -114,7 +115,7 @@ for my $participant (keys(%participants)) {
 # MBD
 use List::MoreUtils qw/natatime/ ;
 my @p    = sort {$a <=> $b} keys %participants;
-my $iter = natatime 2, @p; # FIXIT: SCRT.graph complains with units > 5
+my $iter = natatime 4, @p; # FIXIT: SCRT.graph complains with units > 5
 my $i    = 0;
 while (my @chunk = $iter->()) {
   my $mbd_grs_f = "${datadir}/mbd_grs_${i}";
