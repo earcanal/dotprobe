@@ -16,19 +16,27 @@ participants <- c(5:13,15,16,18,19)
 measures_f   <- paste(datadir,'/measures.csv',sep='')
 
 # read daily measures for all participants
-tbl <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
+outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
   cat(paste("Error opening",measures_f,':',err))
 })
+
+# remove redundant columns from data frame
+# recipe 137
+# want to remove > 1 column
+subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
+
+outcomes
 
 # calculate PANAS PA/NA totals
 # calculate means
 
-# all I new initially was that I needed to process every row for every participant
+# all I knew initially was that I needed to process every row for every participant
 for (participant in participants) {
   #for session
   # PA: Inspired, Alert, Excited, Enthusiastic, Determined + Sad, Depressed
   # NA: Afraid, Upset, Nervous, Scared, Distressed + Anxious, Worried
-  # calculate means
+  # calculate item means
+  # calculate PA/NA means
 }
 
 # R Graphics Cookbook recipe 13.1
