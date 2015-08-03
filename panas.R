@@ -20,24 +20,20 @@ outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
   cat(paste("Error opening",measures_f,':',err))
 })
 
-# remove redundant columns from data frame
-# recipe 137
-# want to remove > 1 column
-subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
+# remove redundant columns from data frame (recipe 137)
+outcomes <- subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
 
-outcomes
+# (Lime Survey subquestion)
+# PA: Inspired(7), Alert(6), Excited(2), Enthusiastic(5), Determined(9) + Sad(11), Depressed(13)
+# NA: Afraid(10), Upset(3), Nervous(8), Scared(4), Distressed(1) + Anxious(12), Worried(14)
+
+#outcomes
+
+# calculate item means
+sapply(subset(outcomes, select = c('panas.SQ007.','panas.SQ006.')), mean)
 
 # calculate PANAS PA/NA totals
-# calculate means
-
-# all I knew initially was that I needed to process every row for every participant
-for (participant in participants) {
-  #for session
-  # PA: Inspired, Alert, Excited, Enthusiastic, Determined + Sad, Depressed
-  # NA: Afraid, Upset, Nervous, Scared, Distressed + Anxious, Worried
-  # calculate item means
-  # calculate PA/NA means
-}
+# calculate PA/NA means
 
 # R Graphics Cookbook recipe 13.1
 "mcor <- cor(panas)
