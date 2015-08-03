@@ -24,12 +24,27 @@ outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
 outcomes <- subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
 
 # (Lime Survey subquestion)
-# PA: Inspired(7), Alert(6), Excited(2), Enthusiastic(5), Determined(9) + Sad(11), Depressed(13)
-# NA: Afraid(10), Upset(3), Nervous(8), Scared(4), Distressed(1) + Anxious(12), Worried(14)
+pa <- c('007','006','002','005','009','011','013')
+pa_names <- c('inspired','alert','excited','enthusiastic','determined','sad','depressed')
+na <- c('010','003','008','004','001','012','014')
+na_names <- c('afraid','upset','nervous','scared','distressed','anxious','worried')
 
-#outcomes
+rename_cols <- function(sq,name) {
+  #rename(outcomes,paste('panas.SQ00',sq,sep='')=get(name))
+  col <- paste('panas.SQ',sq,'.',sep='')
+  # http://www.cookbook-r.com/Manipulating_data/Renaming_columns_in_a_data_frame/
+  names(outcomes)[names(outcomes)==col] <<- name # note <<- for global variable scope!
+  cat(paste('panas.SQ00',sq,'.',sep=''),"\n")
+}
+
+# rename PANAS columns (recipe 6.2)
+foo <- mapply(rename_cols,pa,pa_names)
+foo <- mapply(rename_cols,na,na_names)
+outcomes
+stop()
 
 # calculate item means
+
 sapply(subset(outcomes, select = c('panas.SQ007.','panas.SQ006.')), mean)
 
 # calculate PANAS PA/NA totals
