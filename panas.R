@@ -48,13 +48,13 @@ foo <- mapply(rename_cols,na,c(na_items,na_extra))
 
 options(width=120) # recipe (12.2)
 
-
 #sapply(subset(outcomes,select = pa_items), cor, subset(outcomes,select = 'sad'))
 #sapply(subset(outcomes,select = na_items), cor, subset(outcomes,select = 'sad'))
 #sapply(subset(outcomes,select = na_items), cor, subset(outcomes,select = 'anxious'))
 #sapply(subset(outcomes,select = 'worried'), cor, subset(outcomes,select = 'anxious'))
 
 data <- subset(outcomes,select = c(pa_items,pa_extra))
+# http://www.cookbook-r.com/Manipulating_data/Adding_and_removing_columns_from_a_data_frame/
 data$pa_sum <- rowSums(subset(outcomes,select = pa_items)) # also correlate with combined PA items
 mcor <- cor(data)
 mcor <- round(mcor, digits=2)
