@@ -13,12 +13,15 @@ ES        <- 'PND-' # expected effect is more negative i.e. increased avoidance 
 datadir <- '/media/paul/2E95-1293/study/participants/'
 setwd(datadir)
 participants <- c(5:13,15,16,18,19)
-participants <- c(1,7)
+participants <- c(1,7,8)
 
 # design properties
 design <- 'AB'
 mt     <- 35 # FIXME: varies per P
 limit  <- 8
+
+foo <- c(1,7,8,35,28,25)
+sessions <- matrix(foo,3,2)
 
 X11(type="cairo")
 

@@ -18,28 +18,23 @@ GetOptions ("p=i" => \$participant,
 	    "d=i" => \$debug)
 or die("Error in command line arguments\n");
 
-my $datadir     = '/media/paul/2E95-1293/study/participants';
+my $datadir = '/media/paul/2E95-1293/study/participants';
+my $csv     = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
+                 or die "Cannot use CSV: ".Text::CSV->error_diag ();
+
+## get completed sessions for each participant
 my %participants; # sessions / session_number => phase, ab_i, ab_n, grs, panas
-$participants{1}->{sessions} = 35;
-$participants{5}->{sessions} = 22;
-$participants{6}->{sessions} = 16;
-$participants{7}->{sessions} = 25;
-$participants{8}->{sessions} = 23;
-$participants{9}->{sessions} = 17;
-$participants{10}->{sessions} = 19;
-$participants{11}->{sessions} = 16;
-$participants{12}->{sessions} = 17;
-$participants{13}->{sessions} = 13;
-$participants{15}->{sessions} = 14;
-$participants{16}->{sessions} = 13;
-$participants{18}->{sessions} = 9;
-$participants{19}->{sessions} = 5;
+my $schedules_f = "${datadir}/rumination study - schedules.csv";
+open my $schedules, "<:encoding(utf8)", $schedules_f or die "$schedules_f $!";
+my $row = $csv->getline($schedules);
+$csv->column_names($row);
+for (my $i = 1; $i <= 13; $i++ ) {
+  my $row = $csv->getline_hr($schedules);
+  $participants{$row->{Participant}}->{sessions} = $row->{Complete};
+}
 
 #pod2usage() unless $participant && $sessions && $ARGV[0] && $ARGV[1];
 #my($iwords_f,$session_path) = @ARGV;
-
-my $csv = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
-                 or die "Cannot use CSV: ".Text::CSV->error_diag ();
 
 for my $participant (keys(%participants)) {
   print STDERR "Processing data for participant $participant\n";
