@@ -39,12 +39,10 @@ rename_cols <- function(sq,name) {
 }
 
 # rename PANAS columns (recipe 6.2)
-foo <- mapply(rename_cols,pa,c(pa_items,pa_extra))
-foo <- mapply(rename_cols,na,c(na_items,na_extra))
+foo <- mapply(rename_cols,c(pa,na),c(pa_items,pa_extra,na_items,na_extra))
 
 options(width=120) # recipe (12.2)
-
-X11(type="cairo")
+X11(type="cairo")  # required for corrplot()
 
 # PA
 # R Graphics Cookbook recipe 13.1
