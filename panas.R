@@ -42,26 +42,26 @@ rename_cols <- function(sq,name) {
 foo <- mapply(rename_cols,pa,c(pa_items,pa_extra))
 foo <- mapply(rename_cols,na,c(na_items,na_extra))
 
-# calculate item means (recipe 6.4)
-#sapply(subset(outcomes, select = c(pa_items,pa_extra)), mean)
-#sapply(subset(outcomes, select = c(na_items,na_extra)), mean)
-
 options(width=120) # recipe (12.2)
 
-#sapply(subset(outcomes,select = pa_items), cor, subset(outcomes,select = 'sad'))
-#sapply(subset(outcomes,select = na_items), cor, subset(outcomes,select = 'sad'))
-#sapply(subset(outcomes,select = na_items), cor, subset(outcomes,select = 'anxious'))
-#sapply(subset(outcomes,select = 'worried'), cor, subset(outcomes,select = 'anxious'))
-
-data <- subset(outcomes,select = c(pa_items,pa_extra))
-# http://www.cookbook-r.com/Manipulating_data/Adding_and_removing_columns_from_a_data_frame/
-data$pa_sum <- rowSums(subset(outcomes,select = pa_items)) # also correlate with combined PA items
-mcor <- cor(data)
-mcor <- round(mcor, digits=2)
-
-# R Graphics Cookbook recipe 13.1
 X11(type="cairo")
+
+# PA
+# R Graphics Cookbook recipe 13.1
+pa_data <- subset(outcomes,select = c(pa_items,pa_extra))
+# http://www.cookbook-r.com/Manipulating_data/Adding_and_removing_columns_from_a_data_frame/
+pa_data$pa_total <- rowSums(subset(outcomes,select = pa_items)) # also correlate with combined PA items
+pa_cor <- cor(pa_data)
+pa_cor <- round(pa_cor, digits=2)
 col <- colorRampPalette(c("#BB4444", "#EE9988", "#FFFFFF", "#77AADD", "#4477AA"))
-corrplot(mcor, method="shade", shade.col=NA, tl.col="black", tl.srt=45, col=col(200), addCoef.col="black", addcolorlabel="no", order="AOE",type='upper')
+corrplot(pa_cor, method="shade", shade.col=NA, tl.col="black", tl.srt=45, col=col(200), addCoef.col="black", addcolorlabel="no", order="AOE",type='upper')
 savePlot(filename='PAnas.jpg', type='jpeg')
+
+# NA
+na_data <- subset(outcomes,select = c(na_items,na_extra))
+na_data$na_total <- rowSums(subset(outcomes,select = na_items)) # also correlate with combined NA items
+na_cor <- cor(na_data)
+na_cor <- round(na_cor, digits=2)
+corrplot(na_cor, method="shade", shade.col=NA, tl.col="black", tl.srt=45, col=col(200), addCoef.col="black", addcolorlabel="no", order="AOE",type='upper')
+savePlot(filename='paNAs.jpg', type='jpeg')
 
