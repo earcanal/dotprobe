@@ -16,7 +16,7 @@ datadir      <- '/media/paul/2E95-1293/study/participants'
 participants <- c(5:13,15,16,18,19)
 measures_f   <- paste(datadir,'/measures.csv',sep='')
 
-# read daily measures for all participants
+# read daily outcome measures for all participants
 outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
   cat(paste("Error opening",measures_f,':',err))
 })
@@ -24,11 +24,10 @@ outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
 # remove redundant columns from data frame (recipe 137)
 outcomes <- subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
 
-# (Lime Survey subquestion)
-pa <- c('007','006','002','005','009','011','013')
+pa <- c('007','006','002','005','009','011','013') # Lime Survey subquestions
+na <- c('010','003','008','004','001','012','014') # Lime Survey subquestions
 pa_items <- c('inspired','alert','excited','enthusiastic','determined')
 pa_extra <- c('sad','depressed')
-na <- c('010','003','008','004','001','012','014')
 na_items <- c('afraid','upset','nervous','scared','distressed')
 na_extra <- c('anxious','worried')
 
