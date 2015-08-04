@@ -4,23 +4,30 @@ options(width = 140)
 
 # read pre and post outcomes
 datadir <- '/media/paul/2E95-1293/study/participants/'
-pre_f   <- paste(datadir,'pre.csv',sep='')
-post_f  <- paste(datadir,'post.csv',sep='')
-
-
-pre  <- read.csv(pre_f, header = TRUE, sep = ",", quote = "\"", dec = ".", fill = TRUE, comment.char = "")
-post <- read.csv(post_f, header = TRUE, sep = ",", quote = "\"", dec = ".", fill = TRUE, comment.char = "")
-pre  <- subset(pre, select = -submitdate)
-post <- subset(post, select = -submitdate)
-
 participants <- c(5:13,15,16,18,19)
 
-# http://stackoverflow.com/questions/7112872/removing-specific-rows-from-a-dataframe
-pre <- pre[ pre$participant %in% participants, ] # only rows real participants
+read_data <- function(t) {
+  data_f <- paste(datadir,t,'.csv',sep='')
+  data <- read.csv(data_f, header = TRUE, sep = ",", quote = "\"", dec = ".", fill = TRUE, comment.char = "")
+  # http://stackoverflow.com/questions/7112872/removing-specific-rows-from-a-dataframe
+  data[ data$participant %in% participants, ] # only real participant rows
+}
+
+## pre
+pre <- read_data('pre')
 
 # recipe 12.2
 pre <- pre[order(pre$participant), ]
-pre[c('participant','gad7pretotal','phq9pretotal')]
+rrs_items <- sprintf("rrspre.SQ%03d.",1:22)
+pre$rrs <- rowSums(subset(pre,select = rrs_items))   # RRS total
+pswq_items <- sprintf("pswqpre.SQ%03d.",1:16)
+pre$pswq <- rowSums(subset(pre,select = pswq_items)) # PSWQ total
+pre[c('participant','phq9pretotal','rrs','pswq','gad7pretotal')]
+
+## post
+post <- read_data('post')
+
+# fill missing data with pre score i.e. 'no change'
 
 # Yang et al. (2014) use equivalent 1-way ANOVA (F)
 
