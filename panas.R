@@ -24,8 +24,8 @@ outcomes <- tryCatch(read.csv(measures_f, header=TRUE),  error = function(err) {
 # remove redundant columns from data frame (recipe 137)
 outcomes <- subset(outcomes , select = c(-id,-submitdate,-lastpage,-startdate,-datestamp))
 
-pa <- c('007','006','002','005','009','011','013') # Lime Survey subquestions
-na <- c('010','003','008','004','001','012','014') # Lime Survey subquestions
+pa <- sprintf("%03d",c(7,6,2,5,9,11,13))  # Lime Survey subquestions
+na <- sprintf("%03d",c(10,3,8,4,1,12,14)) # Lime Survey subquestions
 pa_items <- c('inspired','alert','excited','enthusiastic','determined')
 pa_extra <- c('sad','depressed')
 na_items <- c('afraid','upset','nervous','scared','distressed')
