@@ -68,7 +68,7 @@ tests <- apply(outcomes, 1, function(o) {
   formatted[outcome,'mean_pre']  <<- mean(prepost[[pre]])
   formatted[outcome,'sd_pre']    <<- sd(prepost[[pre]])
   formatted[outcome,'mean_post'] <<- mean(prepost[[post]])
-  cat(prepost[[post]],outcome,' ',post,' ',formatted[outcome,'mean_post'],"\\\\\n")
+  #cat(prepost[[post]],outcome,' ',post,' ',formatted[outcome,'mean_post'],"\\\\\n")
   formatted[outcome,'sd_post']   <<- sd(prepost[[post]])
   formatted[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method="paired")
   t.test(prepost[[pre]],prepost[[post]], paired=TRUE, var.equal=TRUE)
@@ -120,7 +120,7 @@ results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci',
 #results
 
 library(xtable)
-strCaption <- paste0("\\textbf{Table n} Pre-post comparisons as a table")
+strCaption <- paste0("\\textbf{Table n} Pre-post comparisons")
 print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r')),
       size="footnotesize",
       include.rownames=TRUE,
@@ -131,7 +131,8 @@ print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','
                         command = c(paste("\\toprule \n",
 					  "& Pre & Post \\\\\n",
                                           "\\cline{2-3} \n",
-                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI95 & Cohen's d\\\\\n"),
+                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI95 & Cohen's d\\\\\n",
+                                          "\\midrule \n"),
                                           "\\bottomrule \n")
 				    )
 		      )
