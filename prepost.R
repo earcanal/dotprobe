@@ -1,5 +1,8 @@
 #!/usr/bin/Rscript
 
+# kintr chunk
+# ---- prepost ----
+
 warnings()
 library(methods)
 library(lsr)
@@ -48,28 +51,85 @@ prepost$rrspost  <- sample(22:88,13)
 prepost$pswqpost <- sample(16:64,13)
 prepost$phq9posttotal <- sample(0:27,13)
 prepost$gad7posttotal <- sample(0:21,13)
-prepost
 
 ## t-tests (recipe 9.15)
 # Student's t-test: var.equal=TRUE
 #http://stackoverflow.com/questions/21840021/grabbing-certain-results-out-of-multiple-t-test-outputs-to-create-a-table
 tests <- list()
-tests[['RRS']] <- t.test(prepost$rrspre,prepost$rrspost, paired=TRUE, var.equal=TRUE)
-tests[['PSWQ']] <- t.test(prepost$pswqpre,prepost$pswqpost, paired=TRUE, var.equal=TRUE)
-tests[['PHQ-9']] <- t.test(prepost$phq9pretotal,prepost$phq9posttotal, paired=TRUE, var.equal=TRUE)
-tests[['GAD-7']] <- t.test(prepost$gad7pretotal,prepost$gad7posttotal, paired=TRUE, var.equal=TRUE)
+outcomes <- c('RRS','PSWQ','PHQ-9','GAD-7','rrspre','pswqpre','phq9pretotal','gad7pretotal','rrspost','pswqpost','phq9posttotal','gad7posttotal')
+dim(outcomes) <- c(4,3)
+foo <- data.frame(1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
+colnames(foo) <- c('mean_pre','sd_pre','mean_post','sd_post','d')
 
-# need M(SD) for each
+tests <- apply(outcomes, 1, function(o) {
+  outcome <- o[1]
+  pre     <- o[2]
+  post    <- o[3]
+  foo[outcome,'mean_pre']  <<- mean(prepost[[pre]])
+  foo[outcome,'sd_pre']    <<- sd(prepost[[pre]])
+  foo[outcome,'mean_post'] <<- mean(prepost[[post]])
+  cat(prepost[[post]],outcome,' ',post,' ',foo[outcome,'mean_post'],"\n")
+  foo[outcome,'sd_post']   <<- sd(prepost[[post]])
+  foo[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method="paired")
+  t.test(prepost[[pre]],prepost[[post]], paired=TRUE, var.equal=TRUE)
+})
+names(tests) <- outcomes[,1]
 
-# extract your values using `sapply`
-df <- sapply(tests, function(x) {
-     c(x$estimate[1],
-       x$estimate[2],
-       ci.lower = x$conf.int[1],
+# extract values using `sapply`
+results <- sapply(tests, function(x) {
+     c(ci.lower = x$conf.int[1],
        ci.upper = x$conf.int[2],
        x$parameter,
        x$statistic,
        p.value = x$p.value)
 })
-t(df)
-cohensD(prepost$rrspre, prepost$rrspost, method="paired")
+results <- t(results)
+#http://stackoverflow.com/questions/7739578/merge-data-frames-based-on-rownames-in-r
+results <- merge(results,foo,by="row.names")
+
+library(stringr)
+format <- function(x) {
+  #sig <- if (round(x, digits=2) <= 0.05) 'a' else 'no'
+  p <- x['p.value']
+  if (round(p, digits=2) < 0.001) {
+    p <- '< .001'
+  } else {
+    p <- sprintf("%0.3f",p)
+    p <- str_replace(as.character(p), "^0\\.", ".")
+  }
+  pre  <- sprintf("%0.2f(%0.2f)",x['mean_pre'],x['sd_pre'])
+  post <- sprintf("%0.2f(%0.2f)",x['mean_post'],x['sd_post'])
+  df   <- sprintf("%d",x['df'])
+  t    <- sprintf("%0.2f",x['t'])
+  d    <- sprintf("%0.3f",x['d'])
+  d    <- str_replace(as.character(d), "^0\\.", ".")
+  ci   <- sprintf("%0.2f; %0.2f",x['ci.lower'],x['ci.upper'])
+  x['ct_pre']  <- pre
+  x['ct_post'] <- post
+  x['df']      <- df
+  x['t']       <- t
+  x['p.value'] <- p
+  x['d']       <- d
+  x['ci']      <- ci
+  x
+}
+row.names(results) <- results$Row.names
+results <- apply(subset(results,select = -Row.names),1,format)
+results <- t(results)
+results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
+
+library(xtable)
+strCaption <- paste0("\\textbf{Table n} Pre-post comparisons as a table")
+print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','l','r','l','r')),
+      size="footnotesize",
+      include.rownames=TRUE,
+      include.colnames=FALSE,
+      caption.placement="top",
+      hline.after=NULL,
+      add.to.row = list(pos = list(-1, nrow(results)),
+                        command = c(paste("\\toprule \n",
+                                          "\\cline{2-3} \n",
+                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI95 & Cohen's d\\\\\n"),
+                                          "\\bottomrule \n")
+				    )
+		      )
