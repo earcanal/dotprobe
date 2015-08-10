@@ -101,7 +101,7 @@ format <- function(x) {
   post <- sprintf("%0.2f(%0.2f)",x['mean_post'],x['sd_post'])
   df   <- sprintf("%d",x['df'])
   t    <- sprintf("%0.2f",x['t'])
-  d    <- sprintf("%0.3f",x['d'])
+  d    <- sprintf("%0.2f",x['d'])
   d    <- str_replace(as.character(d), "^0\\.", ".")
   ci   <- sprintf("%0.2f; %0.2f",x['ci.lower'],x['ci.upper'])
   x['ct_pre']  <- pre
@@ -120,7 +120,7 @@ results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci',
 
 library(xtable)
 strCaption <- paste0("\\textbf{Table n} Pre-post comparisons as a table")
-print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','l','r','l','r')),
+print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r')),
       size="footnotesize",
       include.rownames=TRUE,
       include.colnames=FALSE,
