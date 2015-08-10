@@ -128,6 +128,7 @@ print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
                         command = c(paste("\\toprule \n",
+					  "& Pre & Post \\\\\n",
                                           "\\cline{2-3} \n",
                                           "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI95 & Cohen's d\\\\\n"),
                                           "\\bottomrule \n")
