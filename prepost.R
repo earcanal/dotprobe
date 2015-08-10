@@ -45,11 +45,11 @@ post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttota
 prepost <- merge(pre, post, by='participant')
 
 ## generate some random post data
-set.seed(40)
-prepost$rrspost  <- sample(22:88,13)
-prepost$pswqpost <- sample(16:64,13)
-prepost$phq9posttotal <- sample(0:27,13)
-prepost$gad7posttotal <- sample(0:21,13)
+set.seed(1)
+prepost$rrspost  <- sample(22:68,13,replace=TRUE)     # 22:88
+prepost$pswqpost <- sample(16:44,13,replace=TRUE)     # 16:64
+prepost$phq9posttotal <- sample(0:10,13,replace=TRUE) # 0:27
+prepost$gad7posttotal <- sample(0:11,13,replace=TRUE) # 0:21
 
 ## t-tests (recipe 9.15)
 # Student's t-test: var.equal=TRUE
