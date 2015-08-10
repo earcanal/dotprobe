@@ -2,8 +2,6 @@
 
 # kintr chunk
 # ---- prepost ----
-
-warnings()
 library(methods)
 library(lsr)
 library(plyr)
@@ -47,6 +45,7 @@ post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttota
 prepost <- merge(pre, post, by='participant')
 
 ## generate some random post data
+set.seed(40)
 prepost$rrspost  <- sample(22:88,13)
 prepost$pswqpost <- sample(16:64,13)
 prepost$phq9posttotal <- sample(0:27,13)
@@ -58,19 +57,20 @@ prepost$gad7posttotal <- sample(0:21,13)
 tests <- list()
 outcomes <- c('RRS','PSWQ','PHQ-9','GAD-7','rrspre','pswqpre','phq9pretotal','gad7pretotal','rrspost','pswqpost','phq9posttotal','gad7posttotal')
 dim(outcomes) <- c(4,3)
-foo <- data.frame(1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
-colnames(foo) <- c('mean_pre','sd_pre','mean_post','sd_post','d')
+formatted <- data.frame(1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
+colnames(formatted) <- c('mean_pre','sd_pre','mean_post','sd_post','d')
+
 
 tests <- apply(outcomes, 1, function(o) {
   outcome <- o[1]
   pre     <- o[2]
   post    <- o[3]
-  foo[outcome,'mean_pre']  <<- mean(prepost[[pre]])
-  foo[outcome,'sd_pre']    <<- sd(prepost[[pre]])
-  foo[outcome,'mean_post'] <<- mean(prepost[[post]])
-  cat(prepost[[post]],outcome,' ',post,' ',foo[outcome,'mean_post'],"\n")
-  foo[outcome,'sd_post']   <<- sd(prepost[[post]])
-  foo[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method="paired")
+  formatted[outcome,'mean_pre']  <<- mean(prepost[[pre]])
+  formatted[outcome,'sd_pre']    <<- sd(prepost[[pre]])
+  formatted[outcome,'mean_post'] <<- mean(prepost[[post]])
+  cat(prepost[[post]],outcome,' ',post,' ',formatted[outcome,'mean_post'],"\\\\\n")
+  formatted[outcome,'sd_post']   <<- sd(prepost[[post]])
+  formatted[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method="paired")
   t.test(prepost[[pre]],prepost[[post]], paired=TRUE, var.equal=TRUE)
 })
 names(tests) <- outcomes[,1]
@@ -85,7 +85,7 @@ results <- sapply(tests, function(x) {
 })
 results <- t(results)
 #http://stackoverflow.com/questions/7739578/merge-data-frames-based-on-rownames-in-r
-results <- merge(results,foo,by="row.names")
+results <- merge(results,formatted,by="row.names")
 
 library(stringr)
 format <- function(x) {
@@ -117,6 +117,7 @@ row.names(results) <- results$Row.names
 results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
+#results
 
 library(xtable)
 strCaption <- paste0("\\textbf{Table n} Pre-post comparisons as a table")
