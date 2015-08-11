@@ -16,40 +16,42 @@ read_data <- function(t) {
   data_f <- paste(datadir,t,'.csv',sep='')
   data   <- read.csv(data_f, header = TRUE, sep = ",", quote = "\"", dec = ".", fill = TRUE, comment.char = "")
   # http://stackoverflow.com/questions/7112872/removing-specific-rows-from-a-dataframe
-  data <- data[ data$participant %in% participants, ] # only real participant rows
-  rrs_items  <- sprintf("rrspre.SQ%03d.",1:22)
-  # FIXME: set pre/post columns when we have post data
-  data$rrspre   <- rowSums(subset(data,select = rrs_items))  # RRS total
-  pswq_items <- sprintf("pswqpre.SQ%03d.",1:16)
-  # FIXME: set pre/post columns when we have post data
-  data$pswqpre  <- rowSums(subset(data,select = pswq_items)) # PSWQ total
+  data       <- data[ data$participant %in% participants, ] # only real participant rows
+  rrs_items  <- sprintf(paste('rrs',t,'.SQ%03d.',sep=''),1:22)
+  data$rrs   <- rowSums(subset(data,select = rrs_items))  # RRS total
+  pswq_items <- sprintf(paste('pswq',t,'.SQ%03d.',sep=''),1:16)
+  data$pswq  <- rowSums(subset(data,select = pswq_items)) # PSWQ total
   data
 }
 
 ## pre
-pre <- read_data('pre')
-
-# recipe 12.2
-pre <- pre[order(pre$participant), ]
+pre        <- read_data('pre')
+pre        <- rename(pre, c('rrs'='rrspre', 'pswq'='pswqpre'))
+pre_items  <- c('participant','rrspre','pswqpre','phq9pretotal','gad7pretotal')
+pre        <- subset(pre,select = pre_items)
 
 ## post
-pre_items  <- c('participant','rrspre','pswqpre','phq9pretotal','gad7pretotal')
-pre  <- subset(pre,select = pre_items)
-post <- pre
-# FIXME: uncomment the next line when we have some post data!
-# then replace pre data with real post data
-#post <- read_data('post')
-post <- rename(post, c("rrspre"="rrspost", 'pswqpre'='pswqpost', 'phq9pretotal'='phq9posttotal', 'gad7pretotal'='gad7posttotal'))
-
-post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttotal')
-prepost <- merge(pre, post, by='participant')
-
-## generate some random post data
+# generate some dummy post data
 set.seed(1)
-prepost$rrspost  <- sample(22:68,13,replace=TRUE)     # 22:88
-prepost$pswqpost <- sample(16:44,13,replace=TRUE)     # 16:64
-prepost$phq9posttotal <- sample(0:10,13,replace=TRUE) # 0:27
-prepost$gad7posttotal <- sample(0:11,13,replace=TRUE) # 0:21
+dummy <- data.frame(participant=participants, rrspost=1:13, pswqpost=1:13, phq9posttotal=1:13, gad7posttotal=1:13)
+dummy$rrspost       <- sample(22:68,13,replace=TRUE) # 22:88
+dummy$pswqpost      <- sample(16:44,13,replace=TRUE) # 16:64
+dummy$phq9posttotal <- sample(0:10,13,replace=TRUE)  # 0:27
+dummy$gad7posttotal <- sample(0:11,13,replace=TRUE)  # 0:21
+
+# override dummy data with any real post data available
+post       <- read_data('post')
+post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttotal')
+post       <- rename(post, c('rrs'='rrspost', 'pswq'='pswqpost'))
+post       <- subset(post,select = post_items)
+override   <- match(post$participant,dummy$participant)
+dummy      <- dummy[-override,]
+post       <- rbind(post,dummy)
+
+# merge pre and post data
+prepost <- merge(pre, post, by='participant')
+prepost <- prepost[order(prepost$participant), ] # recipe 12.2
+prepost <- data.frame(prepost)
 
 ## t-tests (recipe 9.15)
 # Student's t-test: var.equal=TRUE
@@ -117,7 +119,6 @@ row.names(results) <- results$Row.names
 results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
-#results
 
 library(xtable)
 strCaption <- paste0("\\textbf{Table n} Pre-post comparisons")
