@@ -22,13 +22,13 @@ my $datadir = '/media/paul/2E95-1293/study/participants';
 my $csv     = Text::CSV->new ( { binary => 1 } )  # should set binary attribute.
                  or die "Cannot use CSV: ".Text::CSV->error_diag ();
 
-## get completed sessions for each participant
-my %participants; # sessions / session_number => phase, ab_i, ab_n, grs, panas
+## get number of completed sessions for each participant
+my %participants; # sessions / session_number => phase, ab_i, ab_n, grs, pa, na
 my $schedules_f = "${datadir}/rumination study - schedules.csv";
 open my $schedules, "<:encoding(utf8)", $schedules_f or die "$schedules_f $!";
 my $row = $csv->getline($schedules);
 $csv->column_names($row);
-for (my $i = 1; $i <= 13; $i++ ) {
+for (my $i = 1; $i <= 15; $i++ ) {
   my $row = $csv->getline_hr($schedules);
   $participants{$row->{Participant}}->{sessions} = $row->{Complete};
 }
@@ -79,16 +79,17 @@ for my $participant (keys(%participants)) {
   my @sessions       = ();
   while (my $row = $csv->getline_hr($measures)) {
     ($debug > 1) && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
-    if ($row->{participant} eq $participant && $row->{lastpage} eq 3) {
+    if ($row->{participant} eq $participant && $row->{lastpage} eq 3) { # only completed surveys (lastpage eq 3)
       my $session = $row->{session};
       push(@sessions,$session);
-      # GRS total (7Q, 1-7, 5-7 reversed)
-      for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
+      # PANAS total (14Q, 1-5)
+      # FIXME: split into PA and NA
       my @keys = sort(grep(/^panas/,keys(%$row)));
       #$debug && print STDERR join(',',@keys), "\n";
       my @scores = map {$row->{$_}} @keys;
       $participants{$participant}->{$row->{session}}->{panas} = sum(@scores);
-      # PANAS total (14Q, 1-5)
+      # GRS total (7Q, 1-7, 5-7 reversed)
+      for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
       @keys   = sort(grep(/^grs/,keys(%$row)));
       @scores = map {$row->{$_}} @keys;
       $participants{$participant}->{$row->{session}}->{grs} = sum(@scores);
@@ -110,7 +111,7 @@ for my $participant (keys(%participants)) {
 # MBD
 use List::MoreUtils qw/natatime/ ;
 my @p    = sort {$a <=> $b} keys %participants;
-my $iter = natatime 4, @p; # FIXIT: SCRT.graph complains with units > 5
+my $iter = natatime 4, @p; # FIXIT: SCRT::graph complains with units > 5
 my $i    = 0;
 while (my @chunk = $iter->()) {
   my $mbd_grs_f = "${datadir}/mbd_grs_${i}";
@@ -118,6 +119,8 @@ while (my @chunk = $iter->()) {
   for my $s (1..35) {
     for my $p (@chunk) {
       my $last  = $participants{$p}->{sessions};
+      # eek, can't do MBD with different numbers of observations :(
+      # FIXME: only use the observations we have i.e. don't replace missing data
       # replace missing data with last observation
       my $phase = $participants{$p}->{$s}->{phase} || $participants{$p}->{$last}->{phase};
       my $grs   = $participants{$p}->{$s}->{grs}   || $participants{$p}->{$last}->{grs};
