@@ -91,7 +91,6 @@ results <- merge(results,formatted,by="row.names")
 
 library(stringr)
 format <- function(x) {
-  #sig <- if (round(x, digits=2) <= 0.05) 'a' else 'no'
   p <- x['p.value']
   if (round(p, digits=2) < 0.001) {
     p <- '< .001'
@@ -121,7 +120,7 @@ results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
 
 library(xtable)
-strCaption <- paste0("\\textbf{Table n} Pre-post comparisons")
+strCaption <- paste0("Pre-post comparisons")
 print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r')),
       size="footnotesize",
       include.rownames=TRUE,
@@ -132,7 +131,7 @@ print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','
                         command = c(paste("\\toprule \n",
 					  "& Pre & Post \\\\\n",
                                           "\\cline{2-3} \n",
-                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI$_{95\\%}$ & Cohen's d\\\\\n",
+                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI-diff$_{95\\%}$ & Cohen's d\\\\\n",
                                           "\\midrule \n"),
                                           "\\bottomrule \n")
 				    )
