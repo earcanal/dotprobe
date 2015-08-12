@@ -6,6 +6,7 @@ options(error=traceback)
 library(SCRT) # Randomisation Tests
 library(SCVA) # Visual Analysis
 library(SCMA) # Meta Analysis
+library(plyr)
 
 statistic <- 'A-B'  # expect B to be more negative than A i.e. increased avoidance of N/I words
 ES        <- 'PND-' # expected effect is more negative i.e. increased avoidance of N/I words
@@ -59,7 +60,7 @@ X11(type="cairo")
 p <- participants
 rt <- data.frame(participant=p,sessions=p,i_a_mean=p,i_a_sd=p,i_b_mean=p,i_b_sd=p,i_p=p,i_pnd=p,n_a_mean=p,n_a_sd=p,n_b_mean=p,n_b_sd=p,n_p=p,n_pnd=p)
 panas <- data.frame(participant=p,sessions=p,pa_a_mean=p,pa_a_sd=p,pa_b_mean=p,pa_b_sd=p,pa_p=p,pa_pnd=p,na_a_mean=p,na_a_sd=p,na_b_mean=p,na_b_sd=p,pa_b_p=p,pa_b_pnd=p)
-grs <- data.frame(participant=p,sessions=p,mean_a=p,sd_a=p,mean_b=p,sd_b=p,p=p,pnd=p)
+grs <- data.frame(participant=p,mean_a=p,sd_a=p,mean_b=p,sd_b=p,p=p,pnd=p)
 for (participant in participants) {
   printf("Participant %s\n",participant);
   p_dir <- paste(datadir,participant,'/',sep='')
@@ -70,8 +71,8 @@ for (participant in participants) {
     # generate plot for visual analysis
     #graph.TREND(design,'LSR','mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (I-word pairs)")
     data <- read.table(dv_f)
-    graph.CL(design,'mean',data=data,xlab="Measurement Times",ylab=ylab[[dv]])
-    savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
+    #graph.CL(design,'mean',data=data,xlab="Measurement Times",ylab=ylab[[dv]])
+    #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     p   <- sprintf("%0.3f",p)
     pnd <- ES(design,ES,data = data)
@@ -95,11 +96,14 @@ for (participant in participants) {
     }
   }
 }
-# get P number and # sessions completed from schedules
-#my $schedules_f = "${datadir}/rumination study - schedules.csv";
-# FIXME: marshall into data frame which xtable can consume
-grs
-stop()
+# get # sessions completed
+schedules_f <- paste(datadir,'rumination study - schedules.csv',sep='')
+schedules   <- read.csv(schedules_f,as.is=TRUE) # ignore non-numerics in Participants column
+sessions    <- schedules[schedules$'Participant' %in% participants,c('Participant','Complete')]
+sessions    <- rename(sessions,c('Participant'='participant','Complete'='sessions'))
+sessions[,'participant'] <- sapply(sessions[,'participant'], as.numeric)
+grs <- merge(sessions,grs,by='participant')
+grs <- grs[with(grs, order(participant,sessions)), ]
 
 # ---- rt_table ----
 
