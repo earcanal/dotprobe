@@ -74,8 +74,6 @@ for my $participant (keys(%participants)) {
   open my $measures, "<:encoding(utf8)", $measures_f or die "$measures_f $!";
   $row = $csv->getline($measures);
   $csv->column_names($row); ## CAVEAT: Export from Lime Survey with question code headings
-  my $grs_scores_f   = "${p_dir}/p${participant}_grs_scores";
-  my $panas_scores_f = "${p_dir}/p${participant}_panas_scores";
   my @sessions       = ();
   while (my $row = $csv->getline_hr($measures)) {
     ($debug > 1) && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
@@ -83,11 +81,15 @@ for my $participant (keys(%participants)) {
       my $session = $row->{session};
       push(@sessions,$session);
       # PANAS total (14Q, 1-5)
-      # FIXME: split into PA and NA
       my @keys = sort(grep(/^panas/,keys(%$row)));
       #$debug && print STDERR join(',',@keys), "\n";
       my @scores = map {$row->{$_}} @keys;
-      $participants{$participant}->{$row->{session}}->{panas} = sum(@scores);
+      # PA: 2,5,6,7,9 (excited,enthusiastic,alert,inspired,determined
+      $participants{$participant}->{$row->{session}}->{pa} = sum(@scores[1,4,5,6,8]);
+      # NA: 1,3,4,8,10 (distressed,upset,scared,nervous,afraid)
+      $participants{$participant}->{$row->{session}}->{na} = sum(@scores[0,2,3,7,9]);
+      # depression: 11,13 sad,depressed
+      $participants{$participant}->{$row->{session}}->{d}  = sum(@scores[10,12]);
       # GRS total (7Q, 1-7, 5-7 reversed)
       for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
       @keys   = sort(grep(/^grs/,keys(%$row)));
@@ -96,16 +98,24 @@ for my $participant (keys(%participants)) {
     }
   }
   close($measures);
+  my $grs_scores_f = "${p_dir}/p${participant}_grs_scores";
+  my $pa_scores_f  = "${p_dir}/p${participant}_pa_scores";
+  my $na_scores_f  = "${p_dir}/p${participant}_na_scores";
+  my $d_scores_f   = "${p_dir}/p${participant}_d_scores";
   open my $grs_scores, ">$grs_scores_f" or die "$grs_scores_f $!";
-  open my $panas_scores, ">$panas_scores_f" or die "$panas_scores_f $!";
+  open my $pa_scores, ">$pa_scores_f"   or die "$pa_scores_f $!";
+  open my $na_scores, ">$na_scores_f"   or die "$na_scores_f $!";
+  open my $d_scores, ">$d_scores_f"     or die "$d_scores_f $!";
   for my $s ( sort {$a <=> $b} @sessions) {
-    my($phase,$ab_i,$ab_n,$grs,$panas) = map { $participants{$participant}->{$s}->{$_} } qw/phase ab_i ab_n grs panas/;
-    $debug && print STDERR "Session $s ($phase): grs = $grs, panas = $panas\n";
+    my($phase,$ab_i,$ab_n,$grs,$pa,$na,$d) = map { $participants{$participant}->{$s}->{$_} }
+      qw/phase ab_i ab_n grs pa na d/;
+    $debug && print STDERR "Session $s ($phase): grs = $grs, PA = $pa, NA = $na, d = $d\n";
     print $grs_scores "$phase\t$grs\n";
-    print $panas_scores "$phase\t$panas\n";
+    print $pa_scores "$phase\t$pa\n";
+    print $na_scores "$phase\t$na\n";
+    print $d_scores "$phase\t$d\n";
   }
-  close($grs_scores);
-  close($panas_scores);
+  map { close($_) } ($grs_scores,$pa_scores,$na_scores,$d_scores)
 }
 
 # MBD
