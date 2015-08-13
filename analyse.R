@@ -43,10 +43,9 @@ for (participant in participants) {
     #printf("DV: %s\n",dv);
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     # generate plot for visual analysis
-    #graph.TREND(design,'LSR','mean',data=read.table(iwords),xlab="Measurement Times",ylab="Attentional Bias Score (I-word pairs)")
     data <- read.table(dv_f)
-    graph.CL(design,'mean',data=data,xlab="Measurement Times",ylab=ylab[[dv]])
-    savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
+    #graph.CL(design,'mean',data=data,xlab="Measurement Times",ylab=ylab[[dv]])
+    #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
     # FIXME: meta analysis
@@ -147,8 +146,8 @@ results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
 strCaption <- paste0("I-PANAS-SF+sad+depressed inferentials")
-print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l','l','r','r','l','l','r','r','l','l','r','r')),
-      size="footnotesize",
+print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
+      size="scriptsize",
       include.rownames=FALSE,
       include.colnames=FALSE,
       floating.environment='sidewaystable',
@@ -156,11 +155,15 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
                         command = c(paste("\\toprule \n",
-					  "& & Positive Affect (PA) & & & & Negative Affect (NA) & & & & 'Depression' ('sad','depressed')\\\\\n",
+					  "& & \\multicolumn{4}{l}{Positive Affect (PA)} & \\multicolumn{4}{l}{Negative Affect (NA)} & \\multicolumn{4}{l}{'Depression' (items 'sad' and 'depressed')}\\\\\n",
                                           "\\cline{3-14} \n",
-					  "& & A & B & & & A & B & & & A & B\\\\\n",
-                                          "\\cline{3-14} \n",
-                                          "Participant & Sessions & ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$ & ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$ & ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$\\\\\n",
+                                          "Participant & Sessions & Phase A
+					  ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\footnote{\\label{randp}${p}$
+					  value from randomisation test
+					  \\parencite{bulte_r_2008}} & ${PND}$ &
+					  Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\textsuperscript{\\ref{randp}} & ${PND}$
+					  &
+					  Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\textsuperscript{\\ref{randp}} & ${PND}$\\\\\n",
                                           "\\midrule \n"),
                                           "\\bottomrule \n")
 				    )
