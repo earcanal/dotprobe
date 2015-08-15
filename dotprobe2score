@@ -219,19 +219,19 @@ sub score {
   my($i_same,$i_diff,$n_same,$n_diff,$n_score,$i_score);
   for my $row (@rows) {
     if ($row->{word_y} ne $row->{probe_y} ) { # different word/probe location 
-      if (grep(/^$row->{word}/,@iword)) {  # I word
+      if (grep(/^$row->{word}/,@iword)) {     # I word
 	$debug > 1 && print 'I: ';
 	$i_same += $row->{response_time};
-      } else {                             # N word
+      } else {                                # N word
 	$debug > 1 && print 'N: ';
 	$n_same += $row->{response_time};
       }
       $debug > 1 && print $row->{word},'-',$row->{pair},"\n";
     } else {                                  # same word/probe location 
-      if (grep(/^$row->{word}/,@iword)) {  # I word
+      if (grep(/^$row->{word}/,@iword)) {     # I word
 	$debug > 1 && print 'I: ';
 	$i_diff += $row->{response_time};
-      } else {                             # N word
+      } else {                                # N word
 	$debug > 1 && print 'N: ';
 	$n_diff += $row->{response_time};
       }
