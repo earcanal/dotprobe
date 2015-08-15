@@ -27,6 +27,17 @@ limit  <- 8
 ## Functions
 printf <- function(...) cat(sprintf(...))
 
+pvalue <- function(p) {
+  p <- as.numeric(p)
+  if (round(p, digits=2) < 0.001) {
+    p <- '< .001'
+  } else {
+    p <- sprintf("%0.3f",p)
+    p <- str_replace(as.character(p), "^0\\.", ".")
+  }
+  p
+}
+
 ylab <- list(i="I-Word Attentional Bias Score (ms)",n="N-Word Attentional Bias Score (ms)",grs="GRS Score",panas="I-PANAS-SF ++ Score")
 X11(type="cairo")
 
@@ -48,7 +59,6 @@ for (participant in participants) {
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
-    # FIXME: meta analysis
     # caclulate mean and sd for phases A and B
     a      <- data[data$V1 == 'A','V2']
     mean_a <- mean(a)
@@ -81,6 +91,33 @@ for (participant in participants) {
   }
 }
 
+# ha ha ha! stack overflow et al. are use cases/patterns!!
+# http://stackoverflow.com/questions/9950144/access-lapply-index-names-inside-fun
+ma <- c('i'=0,'n'=0,'pa'=0,'na'=0,'d'=0,'grs'=0)
+ma <- sapply(seq_along(ma), function(p,outcome,i) {
+  o <- outcome[[i]]
+  if (o == 'i') {
+    ps <- rt$i_p
+  } else if (o == 'n') {
+    ps <- rt$n_p
+  } else if (o == 'pa') {
+    ps <- panas$pa_p
+  } else if (o == 'na') {
+    ps <- panas$na_p
+  } else if (o == 'd') {
+    ps <- panas$d_p
+  } else {
+    ps <- grs$p
+  }
+  f <- '/tmp/p.tsv'
+  write.table(ps, file=f, quote=FALSE, sep='\t', row.name=FALSE, col.names=FALSE)
+  c(o,combine('+',pvalues = read.table(f))) # additive method (Edgington, 1972)
+}, p=ma,outcome=names(ma))
+meta_p <- ma[2,]
+meta_p <- as.numeric(meta_p)
+meta_p <- sapply(meta_p, pvalue)
+names(meta_p) <- ma[1,]
+
 # merge sessions completed into tables
 schedules_f <- paste(datadir,'rumination study - schedules.csv',sep='')
 schedules   <- read.csv(schedules_f,as.is=TRUE) # ignore non-numerics in Participants column
@@ -93,17 +130,6 @@ grs   <- merge(sessions,grs,by='participant')
 grs   <- grs[with(grs, order(participant)), ]
 panas <- merge(sessions,panas,by='participant')
 panas <- panas[with(panas, order(participant)), ]
-
-pvalue <- function(p) {
-  p <- as.numeric(p)
-  if (round(p, digits=2) < 0.001) {
-    p <- '< .001'
-  } else {
-    p <- sprintf("%0.3f",p)
-    p <- str_replace(as.character(p), "^0\\.", ".")
-  }
-  p
-}
 
 format_grs <- function(x) {
   x['p']   <- pvalue(x['p'])
@@ -141,6 +167,11 @@ format_panas <- function(x) {
   x
 }
 
+# LaTeX table wording
+p_head     <- "${p}$\\footnote{\\label{randp}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
+p_head_ref <- "${p}$\\textsuperscript{\\ref{randp}}"
+meta_label <- "${p}$$_{meta}$\\footnote{\\textcite{onghena_customization_2005}}"
+
 ## PANAS table
 results <- apply(panas,1,format_panas)
 results <- t(results)
@@ -157,15 +188,13 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
                         command = c(paste("\\toprule \n",
 					  "& & \\multicolumn{4}{l}{Positive Affect (PA)} & \\multicolumn{4}{l}{Negative Affect (NA)} & \\multicolumn{4}{l}{'Depression' (items 'sad' and 'depressed')}\\\\\n",
                                           "\\cline{3-14} \n",
-                                          "Participant & Sessions & Phase A
-					  ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\footnote{\\label{randp}${p}$
-					  value from randomisation test
-					  \\parencite{bulte_r_2008}} & ${PND}$ &
-					  Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\textsuperscript{\\ref{randp}} & ${PND}$
-					  &
-					  Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$) & ${p}$\\textsuperscript{\\ref{randp}} & ${PND}$\\\\\n",
+                                          "Participant & Sessions & Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$)
+					  & ", p_head, "& ${PND}$ & Phase A ${M}$(${SD}$) & Phase B
+					  ${M}$(${SD}$) & ", p_head_ref, "& ${PND}$ & Phase A ${M}$(${SD}$) &
+					  Phase B ${M}$(${SD}$) & ", p_head_ref, " & ${PND}$\\\\\n",
                                           "\\midrule \n"),
-                                          "\\bottomrule \n")
+				          paste("\\cline{5-5} \\cline{9-9} \\cline{13-13}\n","& & &", meta_label, " & ", meta_p['pa'], "& & & & ", meta_p['na'],"& & & & ", meta_p['d'],"\\\\\n",
+						  "\\bottomrule \n"))
 				    )
 		      )
 
@@ -187,9 +216,16 @@ print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l
                                           "\\cline{3-8} \n",
 					  "& & A & B & & & A & B\\\\\n",
                                           "\\cline{3-10} \n",
-                                          "Participant & Sessions & ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$ & ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$\\\\\n",
+                                          "Participant & Sessions &
+					  ${M}$(${SD}$) & ${M}$(${SD}$) & ",
+					  p_head, " & ${PND}$ & ${M}$(${SD}$) &
+					  ${M}$(${SD}$) & ~", p_head_ref, " & ${PND}$\\\\\n",
                                           "\\midrule \n"),
-                                          "\\bottomrule \n")
+				          paste("\\cline{5-5} \\cline{9-9}
+						\n","& & &", meta_label, " & ",
+						meta_p['i'], "& & & & ",
+						meta_p['n'], "\\\\\n",
+                                          "\\bottomrule \n"))
 				    )
 		      )
 
@@ -208,10 +244,10 @@ print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','
                         command = c(paste("\\toprule \n",
 					  "& & A & B \\\\\n",
                                           "\\cline{3-4} \n",
-                                          "Participant & Sessions &
-					  ${M}$(${SD}$) & ${M}$(${SD}$) & rand ${p}$ & ${PND}$\\\\\n",
+                                          "Participant & Sessions & ${M}$(${SD}$) & ${M}$(${SD}$) & ", p_head, "& ${PND}$\\\\\n",
                                           "\\midrule \n"),
-                                          "\\bottomrule \n")
+				          paste("\\cline{5-5} \n","& & &", meta_label, " & ", meta_p['grs'], "\\\\\n",
+                                          "\\bottomrule \n"))
 				    )
 		      )
 # MBD
