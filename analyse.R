@@ -238,6 +238,7 @@ print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','
       size="footnotesize",
       include.rownames=FALSE,
       include.colnames=FALSE,
+      floating.environment='sidewaystable',
       caption.placement="top",
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
