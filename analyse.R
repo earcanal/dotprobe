@@ -168,11 +168,11 @@ format_panas <- function(x) {
 }
 
 # LaTeX table wording
-p_head     <- "${p}$\\footnote{\\label{randp}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
-p_head_ref <- "${p}$\\textsuperscript{\\ref{randp}}"
 meta_label <- "${p}$$_{meta}$\\footnote{\\textcite{onghena_customization_2005}}"
 
 ## PANAS table
+p_head     <- "${p}$\\footnote{\\label{randp1}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
+p_head_ref <- "${p}$\\textsuperscript{\\ref{randp1}}"
 results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
@@ -199,6 +199,8 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
 		      )
 
 ## RT table
+p_head     <- "${p}$\\footnote{\\label{randp2}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
+p_head_ref <- "${p}$\\textsuperscript{\\ref{randp2}}"
 results <- apply(rt,1,format_rt)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,i_a,i_b,i_p,i_pnd,n_a,n_b,n_p,n_pnd))
@@ -230,6 +232,8 @@ print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l
 		      )
 
 ## GRS table
+p_head     <- "${p}$\\footnote{\\label{randp3}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
+p_head_ref <- "${p}$\\textsuperscript{\\ref{randp3}}"
 results <- apply(grs,1,format_grs)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,a,b,p,pnd))
