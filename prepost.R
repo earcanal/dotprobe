@@ -7,11 +7,11 @@ library(lsr)
 library(plyr)
 library(xtable)
 library(devtools)
-load_all('apprentice',quiet=TRUE)
+load_all('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/apprentice',quiet=TRUE)
 
 options(width = 140)
 
-source('constants.r')
+source('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/constants.r')
 
 ## pre
 pre        <- readprepost(datadir,'pre',participants)
