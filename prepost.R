@@ -117,22 +117,34 @@ row.names(results) <- results$Row.names
 results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
-
-# FIXME: non-rotated environment uses numbered footnotes and I have no idea where they get located (not under table)
-ci_head   <- "CI$_{95\\%}$\\footnote{Confidence interval represents difference in pre and post measures}"
+ci_head   <- "CI$_{95\\%}$\\tabfnm{1}"
 strCaption <- paste0("Pre-post comparisons")
-print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r')),
-      size="footnotesize",
-      include.rownames=TRUE,
-      include.colnames=FALSE,
-      caption.placement="top",
-      hline.after=NULL,
-      add.to.row = list(pos = list(-1, nrow(results)),
-                        command = c(paste("\\toprule \n",
-					  "& Pre & Post \\\\\n",
-                                          "\\cline{2-3} \n",
-                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\\\\n",
-                                          "\\midrule \n"),
-                                          "\\bottomrule \n")
-				    )
-		      )
+latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r'))
+
+# FIXME: table not centred even though this generates a \centering environment
+# suppress print() output as we just want to capture it for now
+# NOTE: This *must* be in {} otherwise knitr will still print() the output due to its internal use of sink()
+{
+  sink('/dev/null')
+  table = print(latex.tab,
+	size="footnotesize",
+	include.rownames=TRUE,
+	include.colnames=FALSE,
+	caption.placement="top",
+	hline.after=NULL,
+	add.to.row = list(pos = list(-1, nrow(results)),
+			  command = c(paste("\\toprule \n",
+					    "& Pre & Post \\\\\n",
+					    "\\cline{2-3} \n",
+					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\tabfnm{2}\\\\\n",
+					    "\\midrule \n"),
+					    "\\bottomrule \n")
+				      )
+			)
+  sink()
+}
+
+# footnotes
+table = sub("{table}","{threeparttable}",table,fixed=TRUE)
+table = sub("\\end{table}","\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{1}Confidence interval represents difference in pre and post measures. \\tabfnt{2}Cohen's d calculated using standard deviation of pre measures.\n}\n\\end{tablenotes}\n\\end{threeparttable}",table,fixed=TRUE)
+cat(table)
