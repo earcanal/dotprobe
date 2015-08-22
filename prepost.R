@@ -117,7 +117,7 @@ row.names(results) <- results$Row.names
 results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
-ci_head   <- "CI$_{95\\%}$\\tabfnm{1}"
+ci_head   <- "CI$_{95\\%}$\\tabfnm{a}"
 strCaption <- paste0("Pre-post comparisons")
 latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r'))
 
@@ -136,7 +136,7 @@ latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l
 			  command = c(paste("\\toprule \n",
 					    "& Pre & Post \\\\\n",
 					    "\\cline{2-3} \n",
-					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\tabfnm{2}\\\\\n",
+					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\tabfnm{b}\\\\\n",
 					    "\\midrule \n"),
 					    "\\bottomrule \n")
 				      )
@@ -146,5 +146,5 @@ latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l
 
 # footnotes
 table = sub("{table}","{threeparttable}",table,fixed=TRUE)
-table = sub("\\end{table}","\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{1}Confidence interval represents difference in pre and post measures. \\tabfnt{2}Cohen's d calculated using standard deviation of pre measures.\n}\n\\end{tablenotes}\n\\end{threeparttable}",table,fixed=TRUE)
+table = sub("\\end{table}","\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{a}Confidence interval represents difference in pre and post measures. \\tabfnt{b}Cohen's d calculated using standard deviation of pre measures.\n}\n\\end{tablenotes}\n\\end{threeparttable}",table,fixed=TRUE)
 cat(table)
