@@ -137,7 +137,7 @@ latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l
 			  command = c(paste("\\toprule \n",
 					    "& Pre & Post \\\\\n",
 					    "\\cline{2-3} \n",
-					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\tabfnm{b}\\\\\n",
+					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's ${d}$\\tabfnm{b}\\\\\n",
 					    "\\midrule \n"),
 					    "\\bottomrule \n")
 				      )
