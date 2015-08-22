@@ -5,6 +5,7 @@
 library(methods)
 library(lsr)
 library(plyr)
+library(xtable)
 
 options(width = 140)
 
@@ -62,7 +63,6 @@ dim(outcomes) <- c(4,3)
 formatted <- data.frame(1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
 colnames(formatted) <- c('mean_pre','sd_pre','mean_post','sd_post','d')
 
-
 tests <- apply(outcomes, 1, function(o) {
   outcome <- o[1]
   pre     <- o[2]
@@ -70,9 +70,8 @@ tests <- apply(outcomes, 1, function(o) {
   formatted[outcome,'mean_pre']  <<- mean(prepost[[pre]])
   formatted[outcome,'sd_pre']    <<- sd(prepost[[pre]])
   formatted[outcome,'mean_post'] <<- mean(prepost[[post]])
-  #cat(prepost[[post]],outcome,' ',post,' ',formatted[outcome,'mean_post'],"\\\\\n")
   formatted[outcome,'sd_post']   <<- sd(prepost[[post]])
-  formatted[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method="paired")
+  formatted[outcome,'d']         <<- cohensD(prepost[[pre]],prepost[[post]],method='x.sd')
   t.test(prepost[[pre]],prepost[[post]], paired=TRUE, var.equal=TRUE)
 })
 names(tests) <- outcomes[,1]
@@ -104,7 +103,7 @@ format <- function(x) {
   t    <- sprintf("%0.2f",x['t'])
   d    <- sprintf("%0.2f",x['d'])
   d    <- str_replace(as.character(d), "^0\\.", ".")
-  ci   <- sprintf("%0.2f; %0.2f",x['ci.lower'],x['ci.upper'])
+  ci   <- sprintf("[%0.2f, %0.2f]",x['ci.lower'],x['ci.upper'])
   x['ct_pre']  <- pre
   x['ct_post'] <- post
   x['df']      <- df
@@ -119,7 +118,8 @@ results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
 
-library(xtable)
+# FIXME: non-rotated environment uses numbered footnotes and I have no idea where they get located (not under table)
+ci_head   <- "CI$_{95\\%}$\\footnote{Confidence interval represents difference in pre and post measures}"
 strCaption <- paste0("Pre-post comparisons")
 print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r')),
       size="footnotesize",
@@ -131,7 +131,7 @@ print(xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','
                         command = c(paste("\\toprule \n",
 					  "& Pre & Post \\\\\n",
                                           "\\cline{2-3} \n",
-                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ & CI-diff$_{95\\%}$ & Cohen's d\\\\\n",
+                                          "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's d\\\\\n",
                                           "\\midrule \n"),
                                           "\\bottomrule \n")
 				    )
