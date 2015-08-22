@@ -6,27 +6,15 @@ library(methods)
 library(lsr)
 library(plyr)
 library(xtable)
+library(devtools)
+load_all('apprentice',quiet=TRUE)
 
 options(width = 140)
 
-# read pre and post outcomes
-datadir <- '/media/paul/2E95-1293/study/participants/'
-participants <- c(5:12,15,16,18,19)
-
-read_data <- function(t) {
-  data_f <- paste(datadir,t,'.csv',sep='')
-  data   <- read.csv(data_f, header = TRUE, sep = ",", quote = "\"", dec = ".", fill = TRUE, comment.char = "")
-  # http://stackoverflow.com/questions/7112872/removing-specific-rows-from-a-dataframe
-  data       <- data[ data$participant %in% participants, ] # only real participant rows
-  rrs_items  <- sprintf(paste('rrs',t,'.SQ%03d.',sep=''),1:22)
-  data$rrs   <- rowSums(subset(data,select = rrs_items))  # RRS total
-  pswq_items <- sprintf(paste('pswq',t,'.SQ%03d.',sep=''),1:16)
-  data$pswq  <- rowSums(subset(data,select = pswq_items)) # PSWQ total
-  data
-}
+source('constants.r')
 
 ## pre
-pre        <- read_data('pre')
+pre        <- readprepost(datadir,'pre',participants)
 pre        <- rename(pre, c('rrs'='rrspre', 'pswq'='pswqpre'))
 pre_items  <- c('participant','rrspre','pswqpre','phq9pretotal','gad7pretotal')
 pre        <- subset(pre,select = pre_items)
@@ -42,7 +30,7 @@ dummy$phq9posttotal <- sample(0:10,n,replace=TRUE)  # 0:27
 dummy$gad7posttotal <- sample(0:11,n,replace=TRUE)  # 0:21
 
 # override dummy data with any real post data available
-post       <- read_data('post')
+post       <- readprepost(datadir,'post',participants)
 post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttotal')
 post       <- rename(post, c('rrs'='rrspost', 'pswq'='pswqpost'))
 post       <- subset(post,select = post_items)
