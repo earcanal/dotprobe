@@ -11,7 +11,7 @@ options(width = 140)
 
 # read pre and post outcomes
 datadir <- '/media/paul/2E95-1293/study/participants/'
-participants <- c(5:13,15,16,18,19)
+participants <- c(5:12,15,16,18,19)
 
 read_data <- function(t) {
   data_f <- paste(datadir,t,'.csv',sep='')
@@ -34,11 +34,12 @@ pre        <- subset(pre,select = pre_items)
 ## post
 # generate some dummy post data
 set.seed(1)
-dummy <- data.frame(participant=participants, rrspost=1:13, pswqpost=1:13, phq9posttotal=1:13, gad7posttotal=1:13)
-dummy$rrspost       <- sample(22:68,13,replace=TRUE) # 22:88
-dummy$pswqpost      <- sample(16:44,13,replace=TRUE) # 16:64
-dummy$phq9posttotal <- sample(0:10,13,replace=TRUE)  # 0:27
-dummy$gad7posttotal <- sample(0:11,13,replace=TRUE)  # 0:21
+n <- length(participants)
+dummy <- data.frame(participant=participants, rrspost=1:n, pswqpost=1:n, phq9posttotal=1:n, gad7posttotal=1:n)
+dummy$rrspost       <- sample(22:68,n,replace=TRUE) # 22:88
+dummy$pswqpost      <- sample(16:44,n,replace=TRUE) # 16:64
+dummy$phq9posttotal <- sample(0:10,n,replace=TRUE)  # 0:27
+dummy$gad7posttotal <- sample(0:11,n,replace=TRUE)  # 0:21
 
 # override dummy data with any real post data available
 post       <- read_data('post')
