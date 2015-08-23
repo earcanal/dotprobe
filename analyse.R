@@ -10,20 +10,29 @@ library(SCMA) # Meta Analysis
 library(plyr)
 library(xtable)
 library(stringr)
+library(psy)
+
+source('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/constants.r')
 
 statistic <- 'A-B'  # expect B to be more negative than A i.e. increased avoidance of N/I words
 ES        <- 'PND-' # expected effect is more negative i.e. increased avoidance of N/I words
-
-datadir <- '/media/paul/2E95-1293/study/participants/'
 setwd(datadir)
-participants <- c(5:12,15,16,18,19)
 
 # design properties
 design <- 'AB'
 mt     <- 35 # FIXME: varies per P
 limit  <- 8
 
-## Functions
+## functions
+
+do_cronbach <- function(s,data) {
+  foo <- data[data$session == s,]
+  #print(foo[order(foo$participant),])
+  foo <- subset(foo, select=-c(participant,session))
+  c <- cronbach(foo)
+  c$alpha
+}
+
 printf <- function(...) cat(sprintf(...))
 
 pvalue <- function(p) {
@@ -45,6 +54,61 @@ p <- participants
 rt <- data.frame(participant=p,i_mean_a=p,i_sd_a=p,i_mean_b=p,i_sd_b=p,i_p=p,i_pnd=p,n_mean_a=p,n_sd_a=p,n_mean_b=p,n_sd_b=p,n_p=p,n_pnd=p)
 panas <- data.frame(participant=p,pa_mean_a=p,pa_sd_a=p,pa_mean_b=p,pa_sd_b=p,pa_p=p,pa_pnd=p,na_mean_a=p,na_sd_a=p,na_mean_b=p,na_sd_b=p,na_p=p,na_pnd=p,d_mean_a=p,d_sd_a=p,d_mean_b=p,d_sd_b=p,d_p=p,d_pnd=p)
 grs <- data.frame(participant=p,mean_a=p,sd_a=p,mean_b=p,sd_b=p,p=p,pnd=p)
+
+## Chronbach's alpha
+
+no_zero <- function(x) {
+  if (as.double(x) == 0) {
+    x
+  } else {
+    str_replace(x, "^0\\.", ".")
+  }
+}
+
+set_alpha <- function(outcome,a) {
+  x <- sprintf("%0.2f",c(median(c),range(c)))
+  dim(x) <- 3
+  x <- apply(x,1,no_zero)
+  alpha[outcome,c('median','range1','range2')] <<- x
+}
+
+# all daily measures
+measures_f    <- paste(datadir,'measures.csv',sep='')
+daily         <- read.csv(measures_f,header=TRUE)
+daily         <- daily[daily$lastpage == 3,] # only completed surveys
+sessions      <- 1:35
+dim(sessions) <- c(35,1)
+alpha <- data.frame(median=1:4,range1=1:4,range2=1:4,row.names=c('PA','NA','d','GRS'))
+
+## GRS
+reverse_grs <- function(x) { 7 - x + 1} # reverse item (7 point scale)
+grs_f <- sprintf('grs.SQ%03d.',1:4)
+grs_r <- sprintf('grs.SQ%03d.',5:7)
+data  <- daily[daily$'participant' %in% participants,c('participant','session',grs_f,grs_r)]
+data  <- cbind(data[,c('participant','session',grs_f)],apply(data[grs_r],2,reverse_grs))
+c     <- sapply(sessions,do_cronbach,data=data)
+set_alpha('GRS',c)
+
+## PANAS
+
+# d
+d_items <- sprintf('panas.SQ%03d.',c(11,13))
+data    <- daily[daily$'participant' %in% participants,c('participant','session',d_items)]
+c       <- sapply(sessions,do_cronbach,data=data)
+set_alpha('d',c)
+
+# PA
+pa_items <- sprintf('panas.SQ%03d.',c(2,5,6,7,9))
+data     <- daily[daily$'participant' %in% participants,c('participant','session',pa_items)]
+c        <- sapply(sessions,do_cronbach,data=data)
+set_alpha('PA',c)
+
+# NA
+na_items <- sprintf('panas.SQ%03d.',c(1,3,4,8,10))
+data     <- daily[daily$'participant' %in% participants,c('participant','session',na_items)]
+c        <- sapply(sessions,do_cronbach,data=data)
+set_alpha('NA',c)
+
 for (participant in participants) {
   #printf("Participant %s\n",participant);
   p_dir <- paste(datadir,participant,'/',sep='')
@@ -165,13 +229,23 @@ format_panas <- function(x) {
   x['d_b']    <- sprintf("%0.2f(%0.2f)",as.numeric(x['d_mean_b']),as.numeric(x['d_sd_b']))
   x
 }
-
 # LaTeX table wording
 meta_label <- "${p}$$_{meta}$\\footnote{\\textcite{onghena_customization_2005}}"
-
 ## PANAS table
 p_head     <- "${p}$\\footnote{\\label{randp1}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
 p_head_ref <- "${p}$\\textsuperscript{\\ref{randp1}}"
+pa_head    <- paste("\\multicolumn{4}{l}{Positive Affect
+		    (PA)\\footnote{Cronbach's $\\alpha$: median =
+		    ",alpha['PA','median'],", range =
+		    ",alpha['PA','range1'],"--",alpha['PA','range2'],"}}",sep='')
+na_head    <- paste("\\multicolumn{4}{l}{Negative Affect
+		    (PA)\\footnote{Cronbach's $\\alpha$: median =
+		    ",alpha['NA','median'],", range =
+		    ",alpha['NA','range1'],"--",alpha['NA','range2'],"}}",sep='')
+d_head     <- paste("\\multicolumn{4}{l}{'Depression' (items 'sad' and 'depressed')
+		    \\footnote{Cronbach's $\\alpha$: median =
+		    ",alpha['d','median'],", range =
+		    ",alpha['d','range1'],"--",alpha['d','range2'],"}}",sep='')
 results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
@@ -185,7 +259,7 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
                         command = c(paste("\\toprule \n",
-					  "& & \\multicolumn{4}{l}{Positive Affect (PA)} & \\multicolumn{4}{l}{Negative Affect (NA)} & \\multicolumn{4}{l}{'Depression' (items 'sad' and 'depressed')}\\\\\n",
+					  "& & ",pa_head," & ",na_head," & ",d_head,"\\\\\n",
                                           "\\cline{3-14} \n",
                                           "Participant & Sessions & Phase A ${M}$(${SD}$) & Phase B ${M}$(${SD}$)
 					  & ", p_head, "& ${PND}$ & Phase A ${M}$(${SD}$) & Phase B
@@ -231,17 +305,18 @@ print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l
 		      )
 
 ## GRS table
-p_head     <- "${p}$\\footnote{\\label{randp3}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
-p_head_ref <- "${p}$\\textsuperscript{\\ref{randp3}}"
+p_head  <- "${p}$\\tabfnm{b}"
 results <- apply(grs,1,format_grs)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,a,b,p,pnd))
-strCaption <- paste0("GRS inferentials")
-print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','l','r','r')),
+meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
+strCaption <- paste0("GRS inferentials\\tabfnm{a}")
+{
+  sink('/dev/null')
+  table <- print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','l','r','r')),
       size="footnotesize",
       include.rownames=FALSE,
       include.colnames=FALSE,
-      floating.environment='sidewaystable',
       caption.placement="top",
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
@@ -254,6 +329,14 @@ print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','
                                           "\\bottomrule \n"))
 				    )
 		      )
+  sink()
+}
+# footnotes
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}",sep='')
+table = sub("{table}","{threeparttable}",table,fixed=TRUE)
+table = sub("\\end{table}",fn,table,fixed=TRUE)
+cat(table)
+
 # MBD
 # GRS
 mbd <- function() {
