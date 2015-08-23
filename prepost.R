@@ -8,13 +8,42 @@ library(plyr)
 library(xtable)
 library(devtools)
 load_all('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/apprentice',quiet=TRUE)
+library('psy')
 
 options(width = 140)
 
 source('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/constants.r')
 
+# results table data structure
+outcomes <- c('RRS','PSWQ','PHQ-9','GAD-7','rrspre','pswqpre','phq9pretotal','gad7pretotal','rrspost','pswqpost','phq9posttotal','gad7posttotal')
+dim(outcomes) <- c(4,3)
+formatted <- data.frame(1:4,1:4,1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
+colnames(formatted) <- c('mean_pre','sd_pre','alpha_pre','mean_post','sd_post','alpha_post','d')
+
+do_cronbach <- function(t) {
+  data <- readprepost(datadir,t,participants)
+  cell <- paste('alpha_',t,sep='')
+  # RRS
+  rrs_items  <- sprintf(paste('rrs',t,'.SQ%03d.',sep=''),1:22)
+  rrs <- cronbach(subset(data,select = c(rrs_items)))
+  formatted['RRS',cell] <<- rrs$alpha
+  # PSWQ
+  pswq_items <- sprintf(paste('pswq',t,'.SQ%03d.',sep=''),1:16)
+  pswq <- cronbach(subset(data,select = c(pswq_items)))
+  formatted['PSWQ',cell] <<- pswq$alpha
+  # PHQ9
+  phq9_items <- sprintf(paste('phq9',t,'.SQ%03d.',sep=''),1:9)
+  phq9 <- cronbach(subset(data,select = c(phq9_items)))
+  formatted['PHQ-9',cell] <<- phq9$alpha
+  # GAD7
+  gad7_items <- sprintf(paste('gad7',t,'.SQ%03d.',sep=''),1:7)
+  gad7 <- cronbach(subset(data,select = c(gad7_items)))
+  formatted['GAD-7',cell] <<- gad7$alpha
+}
+
 ## pre
 pre        <- readprepost(datadir,'pre',participants)
+do_cronbach('pre')
 pre        <- rename(pre, c('rrs'='rrspre', 'pswq'='pswqpre'))
 pre_items  <- c('participant','rrspre','pswqpre','phq9pretotal','gad7pretotal')
 pre        <- subset(pre,select = pre_items)
@@ -31,6 +60,7 @@ dummy$gad7posttotal <- sample(0:11,n,replace=TRUE)  # 0:21
 
 # override dummy data with any real post data available
 post       <- readprepost(datadir,'post',participants)
+do_cronbach('post')
 post_items <- c('participant',"rrspost",'pswqpost','phq9posttotal','gad7posttotal')
 post       <- rename(post, c('rrs'='rrspost', 'pswq'='pswqpost'))
 post       <- subset(post,select = post_items)
@@ -47,10 +77,6 @@ prepost <- data.frame(prepost)
 # Student's t-test: var.equal=TRUE
 #http://stackoverflow.com/questions/21840021/grabbing-certain-results-out-of-multiple-t-test-outputs-to-create-a-table
 tests <- list()
-outcomes <- c('RRS','PSWQ','PHQ-9','GAD-7','rrspre','pswqpre','phq9pretotal','gad7pretotal','rrspost','pswqpost','phq9posttotal','gad7posttotal')
-dim(outcomes) <- c(4,3)
-formatted <- data.frame(1:4,1:4,1:4,1:4,1:4,row.names=outcomes[,1])
-colnames(formatted) <- c('mean_pre','sd_pre','mean_post','sd_post','d')
 
 tests <- apply(outcomes, 1, function(o) {
   outcome <- o[1]
@@ -86,31 +112,36 @@ format <- function(x) {
     p <- sprintf("%0.3f",p)
     p <- str_replace(as.character(p), "^0\\.", ".")
   }
-  pre  <- sprintf("%0.2f(%0.2f)",x['mean_pre'],x['sd_pre'])
-  post <- sprintf("%0.2f(%0.2f)",x['mean_post'],x['sd_post'])
-  df   <- sprintf("%d",x['df'])
-  t    <- sprintf("%0.2f",x['t'])
-  d    <- sprintf("%0.2f",x['d'])
-  d    <- str_replace(as.character(d), "^0\\.", ".")
-  ci   <- sprintf("[%0.2f, %0.2f]",x['ci.lower'],x['ci.upper'])
-  x['ct_pre']  <- pre
-  x['ct_post'] <- post
-  x['df']      <- df
-  x['t']       <- t
-  x['p.value'] <- p
-  x['d']       <- d
-  x['ci']      <- ci
+  pre   <- sprintf("%0.2f(%0.2f)",x['mean_pre'],x['sd_pre'])
+  a_pre  <- sprintf("%0.2f",x['alpha_pre'])
+  a_pre  <- str_replace(as.character(a_pre), "^0\\.", ".")
+  post   <- sprintf("%0.2f(%0.2f)",x['mean_post'],x['sd_post'])
+  a_post <- sprintf("%0.2f",x['alpha_post'])
+  a_post <- str_replace(as.character(a_post), "^0\\.", ".")
+  df    <- sprintf("%d",x['df'])
+  t     <- sprintf("%0.2f",x['t'])
+  d     <- sprintf("%0.2f",x['d'])
+  d     <- str_replace(as.character(d), "^0\\.", ".")
+  ci    <- sprintf("[%0.2f, %0.2f]",x['ci.lower'],x['ci.upper'])
+  x['ct_pre']     <- pre
+  x['alpha_pre']  <- a_pre
+  x['ct_post']    <- post
+  x['alpha_post'] <- a_post
+  x['df']         <- df
+  x['t']          <- t
+  x['p.value']    <- p
+  x['d']          <- d
+  x['ci']         <- ci
   x
 }
 row.names(results) <- results$Row.names
 results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
-results <- subset(results,select = c('ct_pre','ct_post','t','df','p.value','ci','d'))
+results <- subset(results,select = c('ct_pre','alpha_pre','ct_post','alpha_post','t','df','p.value','ci','d'))
 ci_head   <- "CI$_{95\\%}$\\tabfnm{a}"
 strCaption <- paste0("Pre-post comparisons")
-latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l','l','r','r','r','c','r'))
+latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l','r','l','r','r','r','r','c','r'))
 
-# FIXME: table not centred even though this generates a \centering environment
 # suppress print() output as we just want to capture it for now
 # NOTE: This *must* be in {} otherwise knitr will still print() the output due to its internal use of sink()
 {
@@ -123,9 +154,9 @@ latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l
 	hline.after=NULL,
 	add.to.row = list(pos = list(-1, nrow(results)),
 			  command = c(paste("\\toprule \n",
-					    "& Pre & Post \\\\\n",
-					    "\\cline{2-3} \n",
-					    "Measure & ${M}$(${SD}$) & ${M}$(${SD}$) & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's ${d}$\\tabfnm{b}\\\\\n",
+					    "& \\multicolumn{2}{l}{Pre} & \\multicolumn{2}{l}{Post} \\\\\n",
+					    "\\cline{2-5} \n",
+					    "Measure & ${M}$(${SD}$) & Cronbach's $\\alpha$ & ${M}$(${SD}$) & Cronbach's $\\alpha$ & ${t}$ & ${df}$ & ${p}$ &", ci_head, " & Cohen's ${d}$\\tabfnm{b}\\\\\n",
 					    "\\midrule \n"),
 					    "\\bottomrule \n")
 				      )
