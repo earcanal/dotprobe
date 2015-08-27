@@ -55,7 +55,7 @@ rt <- data.frame(participant=p,i_mean_a=p,i_sd_a=p,i_mean_b=p,i_sd_b=p,i_p=p,i_p
 panas <- data.frame(participant=p,pa_mean_a=p,pa_sd_a=p,pa_mean_b=p,pa_sd_b=p,pa_p=p,pa_pnd=p,na_mean_a=p,na_sd_a=p,na_mean_b=p,na_sd_b=p,na_p=p,na_pnd=p,d_mean_a=p,d_sd_a=p,d_mean_b=p,d_sd_b=p,d_p=p,d_pnd=p)
 grs <- data.frame(participant=p,mean_a=p,sd_a=p,mean_b=p,sd_b=p,p=p,pnd=p)
 
-## Chronbach's alpha
+## Cronbach's alpha
 
 no_zero <- function(x) {
   if (as.double(x) == 0) {
@@ -112,13 +112,13 @@ set_alpha('NA',c)
 for (participant in participants) {
   #printf("Participant %s\n",participant);
   p_dir <- paste(datadir,participant,'/',sep='')
-  # FIXME: split PA/NA
   for (dv in c('i','n','grs','pa','na','d')) {
     #printf("DV: %s\n",dv);
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     # generate plot for visual analysis
     data <- read.table(dv_f)
-    #graph.CL(design,'mean',data=data,xlab="Measurement Times",ylab=ylab[[dv]])
+    xlab = paste('Participant',participant,"Measurement Times")
+    #graph.CL(design,'mean',data=data,xlab=xlab,ylab=ylab[[dv]])
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
@@ -230,7 +230,7 @@ format_panas <- function(x) {
   x
 }
 # LaTeX table wording
-meta_label <- "${p}$$_{meta}$\\footnote{\\textcite{onghena_customization_2005}}"
+meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
 ## PANAS table
 p_head     <- "${p}$\\footnote{\\label{randp1}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
 p_head_ref <- "${p}$\\textsuperscript{\\ref{randp1}}"
@@ -272,17 +272,17 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
 		      )
 
 ## RT table
-p_head     <- "${p}$\\footnote{\\label{randp2}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
-p_head_ref <- "${p}$\\textsuperscript{\\ref{randp2}}"
 results <- apply(rt,1,format_rt)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,i_a,i_b,i_p,i_pnd,n_a,n_b,n_p,n_pnd))
-strCaption <- paste0("RT inferentials")
-print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l','r','r','l','l','r','r')),
-      size="footnotesize",
+strCaption <- paste0("RT inferentials\\tabfnm{a}")
+p_head     <- "${p}$\\tabfnm{b}"
+{
+  sink('/dev/null')
+  table <- print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l','r','r','l','l','r','r')),
+      size='footnotesize',
       include.rownames=FALSE,
       include.colnames=FALSE,
-      floating.environment='sidewaystable',
       caption.placement="top",
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
@@ -294,7 +294,7 @@ print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l
                                           "Participant & Sessions &
 					  ${M}$(${SD}$) & ${M}$(${SD}$) & ",
 					  p_head, " & ${PND}$ & ${M}$(${SD}$) &
-					  ${M}$(${SD}$) & ~", p_head_ref, " & ${PND}$\\\\\n",
+					  ${M}$(${SD}$) & ~", p_head, " & ${PND}$\\\\\n",
                                           "\\midrule \n"),
 				          paste("\\cline{5-5} \\cline{9-9}
 						\n","& & &", meta_label, " & ",
@@ -303,6 +303,13 @@ print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l
                                           "\\bottomrule \n"))
 				    )
 		      )
+  sink()
+}
+# footnotes
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
+table = sub("\\begin{table}","\\begin{sidewaystable}[!ph]\n\\begin{threeparttable}\n",table,fixed=TRUE)
+table = sub("\\end{table}",fn,table,fixed=TRUE)
+cat(table)
 
 ## GRS table
 p_head  <- "${p}$\\tabfnm{b}"
