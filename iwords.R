@@ -35,6 +35,11 @@ for (participant in participants) {
   stats[p,'p_freq']    <- m_sd(df,4,s)  # frequency
   stats[p,'p_imag']    <- m_sd(df,9,s)  # imageability
   stats[p,'p_fam']     <- m_sd(df,10,s) # familiarity
+  ## words
+  s <- seq(2,12,by=2)
+  stats[p,'i_freq']    <- m_sd(df,4,s)  # frequency
+  stats[p,'i_imag']    <- m_sd(df,9,s)  # imageability
+  stats[p,'i_fam']     <- m_sd(df,10,s) # familiarity
 }
 
 strCaption <- paste0("I-word pairs")
@@ -84,7 +89,7 @@ latex.tab <- xtable(stats, caption=strCaption, label="p_iwords", align=c('c','l'
 }
 
 # footnotes
-table <- sub("\\begin{table}","\\begin{threeparttable}\n",table,fixed=TRUE)
-fn    <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{a}Footnote a. \\tabfnt{b}Footnote b.}\n\\end{tablenotes}\n\\end{threeparttable}\n",sep='')
+table <- sub("\\begin{table}","\\begin{sidewaystable}[!ph]\n\\begin{threeparttable}\n",table,fixed=TRUE)
+fn    <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{a}Frequency of 1 assumed for I-words missing from database. \\tabfnt{b}Footnote b.}\n\\end{tablenotes}\n\\end{threeparttable}\\end{sidewaystable}\n",sep='')
 table <- sub("\\end{table}",fn,table,fixed=TRUE)
 cat(table)
