@@ -225,12 +225,24 @@ format_grs <- function(x) {
 format_rt <- function(x) {
   x['i_p']   <- pvalue(x['i_p'])
   x['i_pnd'] <- sprintf("%0.2f",as.numeric(x['i_pnd']))
-  x['i_a']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['i_mean_a']),as.numeric(x['i_sd_a']))
-  x['i_b']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['i_mean_b']),as.numeric(x['i_sd_b']))
+  a          <- as.numeric(x['i_mean_a'])
+  b          <- as.numeric(x['i_mean_b'])
+  x['i_a']   <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['i_sd_a']))
+  if (b < a) {
+    x['i_b']   <- sprintf("\\textbf{%0.2f(%0.2f)}",b,as.numeric(x['i_sd_b']))
+  } else {
+    x['i_b']   <- sprintf("%0.2f(%0.2f)",b,as.numeric(x['i_sd_b']))
+  }
   x['n_p']   <- pvalue(x['n_p'])
   x['n_pnd'] <- sprintf("%0.2f",as.numeric(x['n_pnd']))
-  x['n_a']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['n_mean_a']),as.numeric(x['n_sd_a']))
-  x['n_b']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['n_mean_b']),as.numeric(x['n_sd_b']))
+  a          <- as.numeric(x['n_mean_a'])
+  b          <- as.numeric(x['n_mean_b'])
+  x['n_a']   <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['n_sd_a']))
+  if (b < a) {
+    x['n_b']   <- sprintf("\\textbf{%0.2f(%0.2f)}",b,as.numeric(x['n_sd_b']))
+  } else {
+    x['n_b']   <- sprintf("%0.2f(%0.2f)",b,as.numeric(x['n_sd_b']))
+  }
   x
 }
 
@@ -283,6 +295,7 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
 		      )
 
 ## RT table
+options(xtable.sanitize.text.function=identity)
 results <- apply(rt,1,format_rt)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,i_a,i_b,i_p,i_pnd,n_a,n_b,n_p,n_pnd))
@@ -317,7 +330,7 @@ p_head     <- "${p}$\\tabfnm{b}"
   sink()
 }
 # footnotes
-fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words. \\textbf{Bold} values indicate a change in the hypothesised direction.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
 table = sub("\\begin{table}","\\begin{sidewaystable}[!h]\n\\begin{threeparttable}\n",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
 cat(table)
