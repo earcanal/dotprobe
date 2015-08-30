@@ -5,12 +5,14 @@
 options(error=traceback)
               # Single Case
 library(SCRT) # Randomisation Tests
-library(SCVA) # Visual Analysis
+#library(SCVA) # Visual Analysis
 library(SCMA) # Meta Analysis
 library(plyr)
 library(xtable)
 library(stringr)
 library(psy)
+library(devtools)
+load_all('/home/paul/src/R/SCVA',quiet=TRUE) # customised SCVA package
 
 source('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/constants.r')
 
@@ -46,7 +48,7 @@ pvalue <- function(p) {
   p
 }
 
-ylab <- list(i="I-Word Attentional Bias Score (ms)",n="N-Word Attentional Bias Score (ms)",grs="GRS Score",panas="I-PANAS-SF ++ Score")
+ylab <- list(i="I-Word Attentional Bias Score (ms)",n="N-Word Attentional Bias Score (ms)",grs="GRS Score",pa="PA Score",na="NA Score",d="Depression ('sad'+'depressed') Score")
 X11(type="cairo")
 
 ## analyse daily outcomes for each participant
@@ -82,8 +84,8 @@ alpha <- data.frame(median=1:4,range1=1:4,range2=1:4,row.names=c('PA','NA','d','
 
 ## GRS
 reverse_grs <- function(x) { 7 - x + 1} # reverse item (7 point scale)
-grs_f <- sprintf('grs.SQ%03d.',1:4)
-grs_r <- sprintf('grs.SQ%03d.',5:7)
+grs_f <- sprintf('grs.SQ%03d',1:4)
+grs_r <- sprintf('grs.SQ%03d',5:7)
 data  <- daily[daily$'participant' %in% participants,c('participant','session',grs_f,grs_r)]
 data  <- cbind(data[,c('participant','session',grs_f)],apply(data[grs_r],2,reverse_grs))
 c     <- sapply(sessions,do_cronbach,data=data)
@@ -92,22 +94,40 @@ set_alpha('GRS',c)
 ## PANAS
 
 # d
-d_items <- sprintf('panas.SQ%03d.',c(11,13))
+d_items <- sprintf('panas.SQ%03d',c(11,13))
 data    <- daily[daily$'participant' %in% participants,c('participant','session',d_items)]
 c       <- sapply(sessions,do_cronbach,data=data)
 set_alpha('d',c)
 
 # PA
-pa_items <- sprintf('panas.SQ%03d.',c(2,5,6,7,9))
+pa_items <- sprintf('panas.SQ%03d',c(2,5,6,7,9))
 data     <- daily[daily$'participant' %in% participants,c('participant','session',pa_items)]
 c        <- sapply(sessions,do_cronbach,data=data)
 set_alpha('PA',c)
 
 # NA
-na_items <- sprintf('panas.SQ%03d.',c(1,3,4,8,10))
+na_items <- sprintf('panas.SQ%03d',c(1,3,4,8,10))
 data     <- daily[daily$'participant' %in% participants,c('participant','session',na_items)]
 c        <- sapply(sessions,do_cronbach,data=data)
 set_alpha('NA',c)
+
+# maxima
+# http://stackoverflow.com/questions/2104483/how-to-read-table-multiple-files-into-a-single-table-in-r
+read.tables <- function(file.names, ...) {
+  ldply(file.names, function(fn) data.frame(Filename=fn, read.table(fn, ...)))
+}
+
+#for (dv in c('i','n','grs','pa','na','d')) {
+#  for (participant in participants) {
+#    dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
+#}
+dv<-c('i','n','grs','pa','na','d')
+minmax <- mapply(function(dv) {
+  files <- mapply(function(p,dv) { sprintf("%s%s/p%d_%s_scores",datadir,p,p,dv) },participants,dv=dv)
+  data  <- read.tables(files)
+  list(min(data$V2),max(data$V2))
+},dv)
+rownames(minmax)<-c('min','max')
 
 for (participant in participants) {
   #printf("Participant %s\n",participant);
@@ -117,8 +137,8 @@ for (participant in participants) {
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     # generate plot for visual analysis
     data <- read.table(dv_f)
-    xlab = paste('Participant',participant,"Measurement Times")
-    #graph.CL(design,'mean',data=data,xlab=xlab,ylab=ylab[[dv]])
+    xlab = paste('Participant',participant,"Measurement Times (MTs)")
+    #graph.CL(design,'mean',data=data,xlab=xlab,ylab=ylab[[dv]],minmax=minmax[,dv])
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
@@ -234,18 +254,9 @@ meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
 ## PANAS table
 p_head     <- "${p}$\\footnote{\\label{randp1}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
 p_head_ref <- "${p}$\\textsuperscript{\\ref{randp1}}"
-pa_head    <- paste("\\multicolumn{4}{l}{Positive Affect
-		    (PA)\\footnote{Cronbach's $\\alpha$: median =
-		    ",alpha['PA','median'],", range =
-		    ",alpha['PA','range1'],"--",alpha['PA','range2'],"}}",sep='')
-na_head    <- paste("\\multicolumn{4}{l}{Negative Affect
-		    (PA)\\footnote{Cronbach's $\\alpha$: median =
-		    ",alpha['NA','median'],", range =
-		    ",alpha['NA','range1'],"--",alpha['NA','range2'],"}}",sep='')
-d_head     <- paste("\\multicolumn{4}{l}{'Depression' (items 'sad' and 'depressed')
-		    \\footnote{Cronbach's $\\alpha$: median =
-		    ",alpha['d','median'],", range =
-		    ",alpha['d','range1'],"--",alpha['d','range2'],"}}",sep='')
+pa_head    <- paste("\\multicolumn{4}{l}{Positive Affect (PA)\\footnote{Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"}}",sep='')
+na_head    <- paste("\\multicolumn{4}{l}{Negative Affect (NA)\\footnote{Cronbach's $\\alpha$: median = ",alpha['NA','median'],", range = ",alpha['NA','range1'],"--",alpha['NA','range2'],"}}",sep='')
+d_head     <- paste("\\multicolumn{4}{l}{Depression (items 'sad' and 'depressed') \\footnote{Cronbach's $\\alpha$: median = ",alpha['d','median'],", range = ",alpha['d','range1'],"--",alpha['d','range2'],"}}",sep='')
 results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
@@ -307,7 +318,7 @@ p_head     <- "${p}$\\tabfnm{b}"
 }
 # footnotes
 fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
-table = sub("\\begin{table}","\\begin{sidewaystable}[!ph]\n\\begin{threeparttable}\n",table,fixed=TRUE)
+table = sub("\\begin{table}","\\begin{sidewaystable}[!h]\n\\begin{threeparttable}\n",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
 cat(table)
 

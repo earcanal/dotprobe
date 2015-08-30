@@ -91,7 +91,7 @@ for my $participant (keys(%participants)) {
       # depression: 11,13 sad,depressed
       $participants{$participant}->{$row->{session}}->{d}  = sum(@scores[10,12]);
       # GRS total (7Q, 1-7, 5-7 reversed)
-      for (5..7) { $row->{"grs[SQ00$_]"} = 7 - $row->{"grs[SQ00$_]"} + 1 } # reverse scores for items 5-7
+      for (5..7) { die(Dumper($row)) unless defined($row->{"grs.SQ00$_"}); $row->{"grs.SQ00$_"} = 7 - $row->{"grs.SQ00$_"} + 1 } # reverse scores for items 5-7
       @keys   = sort(grep(/^grs/,keys(%$row)));
       @scores = map {$row->{$_}} @keys;
       $participants{$participant}->{$row->{session}}->{grs} = sum(@scores);
