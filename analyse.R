@@ -28,10 +28,9 @@ limit  <- 8
 ## functions
 
 do_cronbach <- function(s,data) {
-  foo <- data[data$session == s,]
-  #print(foo[order(foo$participant),])
-  foo <- subset(foo, select=-c(participant,session))
-  c <- cronbach(foo)
+  session <- data[data$session == s,]
+  session <- subset(session, select=-c(participant,session))
+  c <- cronbach(session)
   c$alpha
 }
 
@@ -78,17 +77,31 @@ set_alpha <- function(outcome,a) {
 measures_f    <- paste(datadir,'measures.csv',sep='')
 daily         <- read.csv(measures_f,header=TRUE)
 daily         <- daily[daily$lastpage == 3,] # only completed surveys
-sessions      <- 1:35
-dim(sessions) <- c(35,1)
+# FIXME: remove bad sessions
+# http://stackoverflow.com/questions/6601658/deleting-specific-rows-from-a-data-frame
+# HACK: should read 'bad' sessions rather than hard-code them
+daily         <- daily[! (grepl('7',daily$participant) & grepl('32',daily$session)), ]
+#daily[daily$participant == 7,c('participant','session')]
+max_sessions      <- 1:35
+dim(max_sessions) <- c(35,1)
+
+schedules_f <- paste(datadir,'rumination study - schedules.csv',sep='')
+schedules   <- read.csv(schedules_f,as.is=TRUE) # ignore non-numerics in Participants column
+sessions    <- schedules[schedules$'Participant' %in% participants,c('Participant','Complete')]
+sessions    <- rename(sessions,c('Participant'='participant','Complete'='sessions'))
+sessions[,'participant'] <- sapply(sessions[,'participant'], as.numeric)
+
+# HACK: reduce sessions by number of 'bad' sessions
+sessions[sessions$participant == 7,'sessions'] <- sessions[sessions$participant == 7,'sessions'] - 1
 alpha <- data.frame(median=1:4,range1=1:4,range2=1:4,row.names=c('PA','NA','d','GRS'))
 
 ## GRS
-reverse_grs <- function(x) { 7 - x + 1} # reverse item (7 point scale)
 grs_f <- sprintf('grs.SQ%03d',1:4)
 grs_r <- sprintf('grs.SQ%03d',5:7)
 data  <- daily[daily$'participant' %in% participants,c('participant','session',grs_f,grs_r)]
+reverse_grs <- function(x) { 7 - x + 1} # reverse item (7 point scale)
 data  <- cbind(data[,c('participant','session',grs_f)],apply(data[grs_r],2,reverse_grs))
-c     <- sapply(sessions,do_cronbach,data=data)
+c     <- sapply(max_sessions,do_cronbach,data=data)
 set_alpha('GRS',c)
 
 ## PANAS
@@ -96,19 +109,19 @@ set_alpha('GRS',c)
 # d
 d_items <- sprintf('panas.SQ%03d',c(11,13))
 data    <- daily[daily$'participant' %in% participants,c('participant','session',d_items)]
-c       <- sapply(sessions,do_cronbach,data=data)
+c       <- sapply(max_sessions,do_cronbach,data=data)
 set_alpha('d',c)
 
 # PA
 pa_items <- sprintf('panas.SQ%03d',c(2,5,6,7,9))
 data     <- daily[daily$'participant' %in% participants,c('participant','session',pa_items)]
-c        <- sapply(sessions,do_cronbach,data=data)
+c        <- sapply(max_sessions,do_cronbach,data=data)
 set_alpha('PA',c)
 
 # NA
 na_items <- sprintf('panas.SQ%03d',c(1,3,4,8,10))
 data     <- daily[daily$'participant' %in% participants,c('participant','session',na_items)]
-c        <- sapply(sessions,do_cronbach,data=data)
+c        <- sapply(max_sessions,do_cronbach,data=data)
 set_alpha('NA',c)
 
 # maxima
@@ -202,11 +215,6 @@ meta_p <- sapply(meta_p, pvalue)
 names(meta_p) <- ma[1,]
 
 # merge sessions completed into tables
-schedules_f <- paste(datadir,'rumination study - schedules.csv',sep='')
-schedules   <- read.csv(schedules_f,as.is=TRUE) # ignore non-numerics in Participants column
-sessions    <- schedules[schedules$'Participant' %in% participants,c('Participant','Complete')]
-sessions    <- rename(sessions,c('Participant'='participant','Complete'='sessions'))
-sessions[,'participant'] <- sapply(sessions[,'participant'], as.numeric)
 rt    <- merge(sessions,rt,by='participant')
 rt    <- rt[with(rt, order(participant)), ]
 grs   <- merge(sessions,grs,by='participant')
