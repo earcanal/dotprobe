@@ -1,0 +1,38 @@
+[% standalone = 0 %]
+[% IF standalone == 1 %]
+\documentclass{article}
+% rotated table text
+\usepackage{array,graphicx}
+\usepackage{booktabs}
+\usepackage{pifont}
+\usepackage[table]{xcolor}
+\usepackage{rotating}
+
+\newcommand*\rot{\rotatebox{90}}
+\begin{document}
+[% END %]
+[% dates   = h.size - 1 %]
+[% midrule = dates + 2 %]
+\setlength{\tabcolsep}{1pt}
+\begin{sidewaystable}
+\tiny{
+{\sffamily
+    \begin{tabular}{@{} crr|r|*{[% dates %]}{c|} @{}}
+        & & \multicolumn{[% dates %]}{c}{Date} \\[2ex]
+\rowcolor{blue!30} \cellcolor{white}
+& \cellcolor{white} & \cellcolor{white}
+\rot{\shortstack[l]{Sessions\\Completed}} & \cellcolor{white} \rot{\shortstack[l]{Accuracy\\${M}$(${SD}$)}} [% FOREACH date IN h.slice(3,h.max) %] & \rot{[%- date %]} [% END %] \\[0em]
+        \cmidrule{2-[%- midrule %]}
+[% FOREACH p IN participants %]
+[% IF p.id == 11 %]\rot{\rlap{~[% h.0 %]}}[% END %] & [%- p.id %] & [% p.sessions %] & 99\% [% FOREACH d IN p.data %][% bad = 0 %] & \cellcolor[% IF d.match('NA') %]{white}[% d = '' %][% ELSIF d.match('X') %]{red}[% ELSIF d.match('bad') %]{black}{\color{white}[% d = 'X' %][% bad = 1 %][% ELSIF d.match('\d+') and d <= p.a %]{yellow}[% ELSE %]{green}[% END %][%- d %][% IF bad %]}[% END %][% END %] \\[0em]
+        \cmidrule{2-[%- midrule %]}
+[% END %]
+    \end{tabular}
+    }
+  }
+    \caption{Participant's session completion patterns}
+\end{sidewaystable}
+
+[% IF standalone == 1 %]
+\end{document}
+[% END %]
