@@ -13,19 +13,21 @@
 [% END %]
 [% dates   = h.size - 1 %]
 [% midrule = dates + 2 %]
+[%# PROCESS doesn't localise variables %]
+[% PROCESS accuracy.tt %]
 \setlength{\tabcolsep}{1pt}
 \begin{sidewaystable}
 \tiny{
 {\sffamily
-    \begin{tabular}{@{} crr|r|*{[% dates %]}{c|} @{}}
+    \begin{tabular}{@{} crc|c|*{[% dates %]}{c|} @{}}
         & & \multicolumn{[% dates %]}{c}{Date} \\[2ex]
 \rowcolor{blue!30} \cellcolor{white}
-& \cellcolor{white} & \cellcolor{white}
-\rot{\shortstack[l]{Sessions\\Completed}} & \cellcolor{white} \rot{\shortstack[l]{Accuracy\\${M}$(${SD}$)}} [% FOREACH date IN h.slice(3,h.max) %] & \rot{[%- date %]} [% END %] \\[0em]
+& \cellcolor{white} & \cellcolor{white} \rot{Sessions Completed} & \cellcolor{white} \rot{\shortstack[l]{\% Accuracy\\${M}$(${SD}$)}} [% FOREACH date IN h.slice(3,h.max) %] & \rot{[%- date %]} [% END %] \\[0em]
         \cmidrule{2-[%- midrule %]}
-[% FOREACH p IN participants %]
-[% IF p.id == 11 %]\rot{\rlap{~[% h.0 %]}}[% END %] & [%- p.id %] & [% p.sessions %] & 99\% [% FOREACH d IN p.data %][% bad = 0 %] & \cellcolor[% IF d.match('NA') %]{white}[% d = '' %][% ELSIF d.match('X') %]{red}[% ELSIF d.match('bad') %]{black}{\color{white}[% d = 'X' %][% bad = 1 %][% ELSIF d.match('\d+') and d <= p.a %]{yellow}[% ELSE %]{green}[% END %][%- d %][% IF bad %]}[% END %][% END %] \\[0em]
+[% i = 0 %]
+[% FOREACH p IN participants %] [% IF p.id == 11 %]\rot{\rlap{~[% h.0 %]}}[% END %] & [%- p.id %] & [% p.sessions %] & [% accuracy.$i %] [% FOREACH d IN p.data %][% bad = 0 %] & \cellcolor[% IF d.match('NA') %]{white}[% d = '' %][% ELSIF d.match('X') %]{red}[% ELSIF d.match('bad') %]{black}{\color{white}[% d = 'X' %][% bad = 1 %][% ELSIF d.match('\d+') and d <= p.a %]{yellow}[% ELSE %]{green}[% END %][%- d %][% IF bad %]}[% END %][% END %] \\[0em]
         \cmidrule{2-[%- midrule %]}
+[% i = i + 1 %]
 [% END %]
     \end{tabular}
     }
