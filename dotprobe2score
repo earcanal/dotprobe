@@ -28,8 +28,9 @@ my $schedules_f = "${datadir}/rumination study - schedules.csv";
 open my $schedules, "<:encoding(utf8)", $schedules_f or die "$schedules_f $!";
 my $row = $csv->getline($schedules);
 $csv->column_names($row);
-for (my $i = 1; $i <= 15; $i++ ) {
+for (my $i = 1; $i <= 12; $i++ ) { # 12 participants
   my $row = $csv->getline_hr($schedules);
+  #$participants{$row->{Participant}}->{sessions} = $row->{Complete} if $row->{Participant} == 5;
   $participants{$row->{Participant}}->{sessions} = $row->{Complete};
 }
 
@@ -58,12 +59,18 @@ for my $participant (keys(%participants)) {
   open my $nscores, ">$nscores_f" or die "$nscores_f $!";
   my %session;
   for (my $session = 1; $session <= $participants{$participant}->{sessions}; $session++) {
-    my($phase,$n_score,$i_score) = score($session_path,\@iword,$participant,$session);
-    $participants{$participant}->{$session}->{phase} = $phase;
-    $participants{$participant}->{$session}->{ab_n} = $n_score;
-    $participants{$participant}->{$session}->{ab_i} = $i_score;
-    print $nscores "$phase\t$n_score\n" or die($!);
-    print $iscores "$phase\t$i_score\n" or die($!);
+    my $session_f = "$session_path/p${participant}s${session}.csv";
+    unless ( -f $session_f ) { # skip missing session files
+      warn("Skipping $session_f: $!");
+      push(@{$participants{$participant}->{bad}},$session);
+    } else {
+      my($phase,$n_score,$i_score) = score($session_f,\@iword,$participant,$session);
+      $participants{$participant}->{$session}->{phase} = $phase;
+      $participants{$participant}->{$session}->{ab_n} = $n_score;
+      $participants{$participant}->{$session}->{ab_i} = $i_score;
+      print $nscores "$phase\t$n_score\n" or die($!);
+      print $iscores "$phase\t$i_score\n" or die($!);
+    }
   }
   close($nscores);
   close($iscores);
@@ -74,11 +81,13 @@ for my $participant (keys(%participants)) {
   open my $measures, "<:encoding(utf8)", $measures_f or die "$measures_f $!";
   $row = $csv->getline($measures);
   $csv->column_names($row); ## CAVEAT: Export from Lime Survey with question code headings
-  my @sessions       = ();
+  my @sessions = ();
   while (my $row = $csv->getline_hr($measures)) {
     ($debug > 1) && print STDERR 'p = ',$row->{participant},' lastpage = ',$row->{lastpage},"\n";
     if ($row->{participant} eq $participant && $row->{lastpage} eq 3) { # only completed surveys (lastpage eq 3)
       my $session = $row->{session};
+      next if grep(/^$session$/,@{$participants{$participant}->{bad}}); # don't process DVs for bad dot-probe sessions 
+      $debug && print "processing DVs for session $session\n";
       push(@sessions,$session);
       # PANAS total (14Q, 1-5)
       my @keys = sort(grep(/^panas/,keys(%$row)));
@@ -106,6 +115,7 @@ for my $participant (keys(%participants)) {
   open my $pa_scores, ">$pa_scores_f"   or die "$pa_scores_f $!";
   open my $na_scores, ">$na_scores_f"   or die "$na_scores_f $!";
   open my $d_scores, ">$d_scores_f"     or die "$d_scores_f $!";
+  $debug && print Dumper($participants{$participant});
   for my $s ( sort {$a <=> $b} @sessions) {
     my($phase,$ab_i,$ab_n,$grs,$pa,$na,$d) = map { $participants{$participant}->{$s}->{$_} }
       qw/phase ab_i ab_n grs pa na d/;
@@ -118,6 +128,7 @@ for my $participant (keys(%participants)) {
   map { close($_) } ($grs_scores,$pa_scores,$na_scores,$d_scores)
 }
 
+=head
 # MBD
 use List::MoreUtils qw/natatime/ ;
 my @p    = sort {$a <=> $b} keys %participants;
@@ -142,6 +153,7 @@ while (my @chunk = $iter->()) {
   close($mbd_grs);
   $i++;
 }
+=cut
 
 =head2 score($session_path,$iword,$p,$s)
 
@@ -150,9 +162,8 @@ Calculate ABM score for a session.
 =cut
 
 sub score {
-  my($session_path,$iword,$p,$s) = @_;
+  my($session_f,$iword,$p,$s) = @_;
 
-  my $session_f = "$session_path/p${p}s${s}.csv";
   open my $session, "<:encoding(utf8)", $session_f or die "$session_f $!";
   my $row = $csv->getline($session); # ignore datestamp row
   $row    = $csv->getline($session);
@@ -240,6 +251,7 @@ sub score {
   }
   $n_score = ($n_diff - $n_same) / 2;
   $i_score = ($i_diff - $i_same) / 2;
+  die($session_f,Dumper($csv->column_names)) unless($n_diff && $n_same);
 
   my $phase = $abm ? 'B' : 'A';
   return($phase,$n_score,$i_score);
