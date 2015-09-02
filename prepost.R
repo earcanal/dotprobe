@@ -9,6 +9,7 @@ library(xtable)
 library(devtools)
 load_all('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/apprentice',quiet=TRUE)
 library('psy')
+library(reshape2)
 
 options(width = 140)
 
@@ -72,6 +73,30 @@ post       <- rbind(post,dummy)
 prepost <- merge(pre, post, by='participant')
 prepost <- prepost[order(prepost$participant), ] # recipe 12.2
 prepost <- data.frame(prepost)
+
+## check for outliers
+# http://stackoverflow.com/questions/12866189/calculating-the-outliers-in-r
+outliers <- function(d) {
+  #reshape the data
+  df <- melt(d,id="participant")
+  #function to detect outliers
+  outfun <- function(x) {
+    abs(x-mean(x,na.rm=TRUE)) > 3*sd(x,na.rm=TRUE)
+  }
+  df$outlier <- outfun(df$value)
+  print(df)
+}
+# SMELL: clunky way of calculating outliers for each DV
+if (FALSE) {
+outliers(prepost[,c('participant','gad7pretotal')])
+outliers(prepost[,c('participant','phq9pretotal')])
+outliers(prepost[,c('participant','rrspre')])
+outliers(prepost[,c('participant','pswqpre')])
+outliers(prepost[,c('participant','gad7posttotal')])
+outliers(prepost[,c('participant','phq9posttotal')])
+outliers(prepost[,c('participant','rrspost')])
+outliers(prepost[,c('participant','pswqpost')])
+}
 
 ## t-tests (recipe 9.15)
 # Student's t-test: var.equal=TRUE
