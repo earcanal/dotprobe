@@ -141,8 +141,8 @@ fnm(19,'i_fam','b')
 fnm(19,'i_fam','c')
 
 options(xtable.sanitize.text.function=identity)
-strCaption <- paste0("Words chosen by each participant as likely to initiate rumination over their current concernt (I-words) and matched pairs selected by the experimenter (\\textsf{WORD}---\\textsf{PAIR}).")
-latex.tab <- xtable(pairs, caption=strCaption, label="p_iwords", align=c('c','l','c','c','c','c','c','c'))
+strCaption <- paste0("Words chosen by each participant as likely to initiate rumination over their current concern (I-words) and matched pairs selected by the experimenter (\\textsf{WORD}---\\textsf{PAIR}).")
+latex.tab <- xtable(pairs, caption=strCaption, label="tab:iwords", align=c('c','l','c','c','c','c','c','c'))
 {
   sink('/dev/null')
   table = print(latex.tab,
@@ -162,12 +162,12 @@ latex.tab <- xtable(pairs, caption=strCaption, label="p_iwords", align=c('c','l'
 
 # footnotes
 table <- sub("\\begin{table}","\\begin{sidewaystable}[!ph]\n\\begin{threeparttable}\n",table,fixed=TRUE)
-fn    <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{1}Answer to the question \\enquote{How long has this been a difficulty for you?}at the start of the study. \\tabfnt{2}Female and male names redacted with equivalent number of \\textsf{F} or \\textsf{M} characters respectively. \\tabfnt{a}I-word not in database.}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
+fn    <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{1}Answer to the question \\enquote{How long has this been a difficulty for you?} at the start of the study. \\tabfnt{2}Female and male names redacted with equivalent number of \\textsf{F} or \\textsf{M} characters respectively. \\tabfnt{a}I-word not in database.}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
 table <- sub("\\end{table}",fn,table,fixed=TRUE)
 cat(table)
 
 strCaption <- paste0("Characteristics of each participant's I-words and matched pairs.")
-latex.tab <- xtable(stats, caption=strCaption, label="p_iwords", align=c('c','l','l','l','l','l','l','l','l'))
+latex.tab <- xtable(stats, caption=strCaption, label="tab:iwordcharacteristics", align=c('c','l','l','l','l','l','l','l','l'))
 {
   sink('/dev/null')
   table = print(latex.tab,
