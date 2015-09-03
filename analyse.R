@@ -150,7 +150,7 @@ for (participant in participants) {
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     # generate plot for visual analysis
     data <- read.table(dv_f)
-    xlab = paste('Participant',participant,"Measurement Times (MTs)")
+    xlab = paste('Sessions (Participant ',participant,')',sep='')
     #graph.CL(design,'mean',data=data,xlab=xlab,ylab=ylab[[dv]],minmax=minmax[,dv])
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
