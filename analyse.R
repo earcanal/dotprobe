@@ -293,7 +293,7 @@ results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
 strCaption <- paste0("I-PANAS-SF+sad+depressed inferentials")
 sink(paste(results_d,'/panas.tex',sep=''),append=FALSE,split=FALSE)
-print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
+print(xtable(results, caption=strCaption, label="tab:panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
       size="scriptsize",
       include.rownames=FALSE,
       include.colnames=FALSE,
@@ -325,7 +325,7 @@ strCaption <- paste0("RT inferentials\\tabfnm{a}")
 p_head     <- "${p}$\\tabfnm{b}"
 {
   sink('/dev/null')
-  table <- print(xtable(results, caption=strCaption, label="rt", align=c('c','c','c','l','l','r','r','l','l','r','r')),
+  table <- print(xtable(results, caption=strCaption, label="tab:rt", align=c('c','c','c','l','l','r','r','l','l','r','r')),
       size='footnotesize',
       include.rownames=FALSE,
       include.colnames=FALSE,
@@ -370,7 +370,7 @@ meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
 strCaption <- paste0("GRS inferentials\\tabfnm{a}")
 {
   sink('/dev/null')
-  table <- print(xtable(results, caption=strCaption, label="grs", align=c('c','c','c','l','l','r','r')),
+  table <- print(xtable(results, caption=strCaption, label="tab:grs", align=c('c','c','c','l','l','r','r')),
       size="footnotesize",
       include.rownames=FALSE,
       include.colnames=FALSE,
