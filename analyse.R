@@ -14,9 +14,13 @@ library(psy)
 library(devtools)
 load_all('/home/paul/src/R/SCVA',quiet=TRUE) # customised SCVA package
 
-source('/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe/constants.r')
+root      <- '/home/paul/Documents/psychology/msc/M210/apprenticeship'
+results_d <- paste(root,'/dissertation/results',sep="")
+source(paste(root,'/opensesame/dotprobe/constants.r',sep=""))
 
-statistic <- 'A-B'  # expect B to be more negative than A i.e. increased avoidance of N/I words
+# FIXME: is A-B or B-A the correct test statistic for bias scores?!!
+statistic <- 'A-B'  # 1-tailed expect B to be more negative than A i.e. increased avoidance of N/I words
+#statistic <- '|A-B|' # 2-tailed? is probably correct for GRS and PANAS
 ES        <- 'PND-' # expected effect is more negative i.e. increased avoidance of N/I words
 setwd(datadir)
 
@@ -151,8 +155,15 @@ for (participant in participants) {
     # generate plot for visual analysis
     data <- read.table(dv_f)
     xlab = paste('Session (Participant ',participant,')',sep='')
-    #graph.CL(design,'mean',data=data,xlab=xlab,ylab=ylab[[dv]],minmax=minmax[,dv])
+    # FIXME: bmed,mean/median/trimmean
+    #graph.CL(design,'bmed',data=data,xlab=xlab,ylab=ylab[[dv]],a_legend='A (baseline)',b_legend='B (ABM training)',minmax=minmax[,dv])
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
+    if (dv == 'i' | dv == 'n') { # bias score
+      # FIXME: is A-B or B-A the correct test statistic for bias scores?!!
+      statistic <- 'A-B'         # 1-tailed expect B to be more negative than A i.e. increased avoidance of N/I words
+    } else {                     # GRS, PANAS
+      statistic <- '|A-B|' # 2-tailed? is probably correct
+    }
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
     # caclulate mean and sd for phases A and B
@@ -281,6 +292,7 @@ results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
 strCaption <- paste0("I-PANAS-SF+sad+depressed inferentials")
+sink(paste(results_d,'/panas.tex',sep=''),append=FALSE,split=FALSE)
 print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
       size="scriptsize",
       include.rownames=FALSE,
@@ -301,6 +313,7 @@ print(xtable(results, caption=strCaption, label="panas", align=c('c','c','c','l'
 						  "\\bottomrule \n"))
 				    )
 		      )
+sink()
 
 ## RT table
 options(xtable.sanitize.text.function=identity)
@@ -341,7 +354,9 @@ p_head     <- "${p}$\\tabfnm{b}"
 fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words. \\textbf{Bold} values indicate a change in the hypothesised direction.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
 table = sub("\\begin{table}","\\begin{sidewaystable}[!h]\n\\begin{threeparttable}\n",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
+sink(paste(results_d,'/rt.tex',sep=''),append=FALSE,split=FALSE)
 cat(table)
+sink()
 
 ## GRS table
 p_head  <- "${p}$\\tabfnm{b}"
@@ -374,7 +389,9 @@ strCaption <- paste0("GRS inferentials\\tabfnm{a}")
 fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}",sep='')
 table = sub("{table}","{threeparttable}",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
+sink(paste(results_d,'/grs.tex',sep=''),append=FALSE,split=FALSE)
 cat(table)
+sink()
 
 # MBD
 # GRS
