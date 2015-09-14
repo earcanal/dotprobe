@@ -18,10 +18,6 @@ root      <- '/home/paul/Documents/psychology/msc/M210/apprenticeship'
 results_d <- paste(root,'/dissertation/results',sep="")
 source(paste(root,'/opensesame/dotprobe/constants.r',sep=""))
 
-# FIXME: is A-B or B-A the correct test statistic for bias scores?!!
-statistic <- 'A-B'  # 1-tailed expect B to be more negative than A i.e. increased avoidance of N/I words
-#statistic <- '|A-B|' # 2-tailed? is probably correct for GRS and PANAS
-ES        <- 'PND-' # expected effect is more negative i.e. increased avoidance of N/I words
 setwd(datadir)
 
 # design properties
@@ -134,10 +130,6 @@ read.tables <- function(file.names, ...) {
   ldply(file.names, function(fn) data.frame(Filename=fn, read.table(fn, ...)))
 }
 
-#for (dv in c('i','n','grs','pa','na','d')) {
-#  for (participant in participants) {
-#    dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
-#}
 dv<-c('i','n','grs','pa','na','d')
 minmax <- mapply(function(dv) {
   files <- mapply(function(p,dv) { sprintf("%s%s/p%d_%s_scores",datadir,p,p,dv) },participants,dv=dv)
@@ -147,22 +139,27 @@ minmax <- mapply(function(dv) {
 rownames(minmax)<-c('min','max')
 
 for (participant in participants) {
-  #printf("Participant %s\n",participant);
   p_dir <- paste(datadir,participant,'/',sep='')
   for (dv in c('i','n','grs','pa','na','d')) {
     #printf("DV: %s\n",dv);
     dv_f <- paste(p_dir,'p',participant,'_',dv,'_scores',sep='')
     # generate plot for visual analysis
     data <- read.table(dv_f)
-    xlab = paste('Session (Participant ',participant,')',sep='')
-    # FIXME: bmed,mean/median/trimmean
+    completed <- sessions[sessions$'participant' == participant,'sessions']
+    xlab = paste('Session (Participant ',participant,'; ',completed,' sessions)',sep='')
     #graph.CL(design,'bmed',data=data,xlab=xlab,ylab=ylab[[dv]],a_legend='A (baseline)',b_legend='B (ABM training)',minmax=minmax[,dv])
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
-    if (dv == 'i' | dv == 'n') { # bias score
+    if (dv == 'n') {             ## bias score
       # FIXME: is A-B or B-A the correct test statistic for bias scores?!!
-      statistic <- 'A-B'         # 1-tailed expect B to be more negative than A i.e. increased avoidance of N/I words
-    } else {                     # GRS, PANAS
-      statistic <- '|A-B|' # 2-tailed? is probably correct
+      statistic <- 'A-B'         # 1-tailed: expect B to be more negative than A i.e. increased avoidance of N/I words
+      ES <- 'PND-'               # expect negative bias score i.e. increased avoidance of N/I words
+    } else {                     ## GRS, PANAS
+      statistic <- '|A-B|'       # FIXME: 2-tailed? is probably correct
+      if (dv == 'pa') { 
+	ES <- 'PND+'             # expect increased PA
+      } else {
+	ES <- 'PND-'             # expect decreased GRS, NA and depression
+      }
     }
     p   <- pvalue.systematic(design,statistic,save = "no",limit = limit, data = data)
     pnd <- ES(design,ES,data = data)
@@ -280,6 +277,7 @@ format_panas <- function(x) {
   x['d_b']    <- sprintf("%0.2f(%0.2f)",as.numeric(x['d_mean_b']),as.numeric(x['d_sd_b']))
   x
 }
+
 # LaTeX table wording
 meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
 ## PANAS table
@@ -291,7 +289,7 @@ d_head     <- paste("\\multicolumn{4}{l}{Depression (items 'sad' and 'depressed'
 results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
-strCaption <- paste0("I-PANAS-SF+sad+depressed inferentials")
+strCaption <- paste0("Randomisation tests and meta-analysis for positive affect (PA), negative affect (NA) and depression.")
 sink(paste(results_d,'/panas.tex',sep=''),append=FALSE,split=FALSE)
 print(xtable(results, caption=strCaption, label="tab:panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
       size="scriptsize",
@@ -310,7 +308,7 @@ print(xtable(results, caption=strCaption, label="tab:panas", align=c('c','c','c'
 					  ${M}$(${SD}$) & ", p_head_ref, "& ${PND}$ & Phase A ${M}$(${SD}$) &
 					  Phase B ${M}$(${SD}$) & ", p_head_ref, " & ${PND}$\\\\\n",
                                           "\\midrule \n"),
-				          paste("\\cline{5-5} \\cline{9-9} \\cline{13-13}\n","& & &", meta_label, " & ", meta_p['pa'], "& & & & ", meta_p['na'],"& & & & ", meta_p['d'],"\\\\\n",
+				          paste("\\cline{5-5} \\cline{9-9} \\cline{13-13}\n","& & & ${p}$$_{meta}$\\footnote{Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.} & ", meta_p['pa'], "& & & & ", meta_p['na'],"& & & & ", meta_p['d'],"\\\\\n",
 						  "\\bottomrule \n"))
 				    )
 		      )
@@ -321,7 +319,7 @@ options(xtable.sanitize.text.function=identity)
 results <- apply(rt,1,format_rt)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,i_a,i_b,i_p,i_pnd,n_a,n_b,n_p,n_pnd))
-strCaption <- paste0("RT inferentials\\tabfnm{a}")
+strCaption <- paste0("Randomisation tests and meta-analysis for I-word and N-word dot-probe scores\\tabfnm{a}.")
 p_head     <- "${p}$\\tabfnm{b}"
 {
   sink('/dev/null')
@@ -353,10 +351,11 @@ p_head     <- "${p}$\\tabfnm{b}"
 		      )
   sink()
 }
+
 # footnotes
-fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}More negative scores indicate avoidance of negative words, more positive scores indicate vigilance for negative words. \\textbf{Bold} values indicate a change in the hypothesised direction.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
-table = sub("\\begin{table}","\\begin{sidewaystable}[!h]\n\\begin{threeparttable}\n",table,fixed=TRUE)
-table = sub("\\end{table}",fn,table,fixed=TRUE)
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}For both I-words and N-words, more negative scores indicate avoidance, and more positive scores vigilance. Values in \\textbf{bold} indicate reductions in attentional bias after ABM training.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
+table = sub("\\begin{sidewaystable}","\\begin{sidewaystable}[!htbp]\n\\begin{threeparttable}\n",table,fixed=TRUE)
+table = sub("\\end{sidewaystable}",fn,table,fixed=TRUE)
 sink(paste(results_d,'/rt.tex',sep=''),append=FALSE,split=FALSE)
 cat(table)
 sink()
@@ -367,13 +366,15 @@ results <- apply(grs,1,format_grs)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,a,b,p,pnd))
 meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
-strCaption <- paste0("GRS inferentials\\tabfnm{a}")
+strCaption <- paste0("Randomisation tests and meta-analysis for GRS\\tabfnm{a}.")
 {
   sink('/dev/null')
   table <- print(xtable(results, caption=strCaption, label="tab:grs", align=c('c','c','c','l','l','r','r')),
       size="footnotesize",
       include.rownames=FALSE,
       include.colnames=FALSE,
+      floating.environment='table',
+      table.placement='p',
       caption.placement="top",
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
@@ -389,7 +390,7 @@ strCaption <- paste0("GRS inferentials\\tabfnm{a}")
   sink()
 }
 # footnotes
-fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}\\parencite{onghena_customization_2005}\n}\n\\end{tablenotes}\n\\end{threeparttable}",sep='')
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}",sep='')
 table = sub("{table}","{threeparttable}",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
 sink(paste(results_d,'/grs.tex',sep=''),append=FALSE,split=FALSE)
@@ -400,7 +401,7 @@ sink()
 # GRS
 mbd <- function() {
   #print("MBD GRS");
-  # FIXME: try a MBD randomization analysis, which requires additional "possible start points" file
+  # MBD randomization analysis, requires additional "possible start points" file
   #p <- pvalue.systematic('MBD',statistic,save = "no",limit = limit, data = read.table(mbd_grs), starts = starts_f)
   starts_f <- paste(datadir,'starts',sep='')
   mbd_grs <- paste(datadir,'mbd_grs_1',sep='')
