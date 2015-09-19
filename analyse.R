@@ -151,7 +151,8 @@ for (participant in participants) {
     #savePlot(filename=paste(p_dir,'p',participant,'_',dv,'.jpg',sep=''), type='jpeg')
     if (dv == 'n') {             ## bias score
       # FIXME: is A-B or B-A the correct test statistic for bias scores?!!
-      statistic <- 'A-B'         # 1-tailed: expect B to be more negative than A i.e. increased avoidance of N/I words
+      #statistic <- 'A-B'        # 1-tailed: expect B to be more negative than A i.e. increased avoidance of N/I words
+      statistic <- '|A-B|'       # Agreed with Nick to do them all 2-tailed
       ES <- 'PND-'               # expect negative bias score i.e. increased avoidance of N/I words
     } else {                     ## GRS, PANAS
       statistic <- '|A-B|'       # FIXME: 2-tailed? is probably correct
