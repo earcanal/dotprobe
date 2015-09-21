@@ -393,7 +393,6 @@ strCaption <- paste0("Randomisation tests and meta-analysis for GRS\\tabfnm{a}. 
       include.rownames=FALSE,
       include.colnames=FALSE,
       floating.environment='table',
-      table.placement='p',
       caption.placement="top",
       hline.after=NULL,
       add.to.row = list(pos = list(-1, nrow(results)),
@@ -409,8 +408,9 @@ strCaption <- paste0("Randomisation tests and meta-analysis for GRS\\tabfnm{a}. 
   sink()
 }
 # footnotes
-fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}",sep='')
-table = sub("{table}","{threeparttable}",table,fixed=TRUE)
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}\\end{table}",sep='')
+#table = sub("{table}","{threeparttable}",table,fixed=TRUE)
+table = sub("\\begin{table}","\\begin{table}[!htbp] \\centering\n\\begin{threeparttable}\n",table,fixed=TRUE)
 table = sub("\\end{table}",fn,table,fixed=TRUE)
 sink(paste(results_d,'/grs.tex',sep=''),append=FALSE,split=FALSE)
 cat(table)
