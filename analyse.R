@@ -231,11 +231,28 @@ grs   <- grs[with(grs, order(participant)), ]
 panas <- merge(sessions,panas,by='participant')
 panas <- panas[with(panas, order(participant)), ]
 
+format_direction <- function(a,b,sd,diff='<') {
+  v <- b
+  sd <- as.numeric(sd)
+  if ( diff == '>' ) { # test for b > a
+    c <- a
+    a <- b
+    b <- c
+  }
+  if (b < a) {
+    sprintf("\\textbf{%0.2f(%0.2f)}",v,sd)
+  } else {
+    sprintf("%0.2f(%0.2f)",v,sd)
+  }
+}
+
 format_grs <- function(x) {
   x['p']   <- pvalue(x['p'])
   x['pnd'] <- sprintf("%0.2f",as.numeric(x['pnd']))
-  x['a']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['mean_a']),as.numeric(x['sd_a']))
-  x['b']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['mean_b']),as.numeric(x['sd_b']))
+  a <- as.numeric(x['mean_a'])
+  b <- as.numeric(x['mean_b'])
+  x['a'] <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['sd_a']))
+  x['b'] <- format_direction(a,b,x['sd_b'])
   x
 }
 
@@ -245,43 +262,44 @@ format_rt <- function(x) {
   a          <- as.numeric(x['i_mean_a'])
   b          <- as.numeric(x['i_mean_b'])
   x['i_a']   <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['i_sd_a']))
-  if (b < a) {
-    x['i_b']   <- sprintf("\\textbf{%0.2f(%0.2f)}",b,as.numeric(x['i_sd_b']))
-  } else {
-    x['i_b']   <- sprintf("%0.2f(%0.2f)",b,as.numeric(x['i_sd_b']))
-  }
+  x['i_b']   <- format_direction(a,b,x['i_sd_b'])
   x['n_p']   <- pvalue(x['n_p'])
   x['n_pnd'] <- sprintf("%0.2f",as.numeric(x['n_pnd']))
   a          <- as.numeric(x['n_mean_a'])
   b          <- as.numeric(x['n_mean_b'])
   x['n_a']   <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['n_sd_a']))
-  if (b < a) {
-    x['n_b']   <- sprintf("\\textbf{%0.2f(%0.2f)}",b,as.numeric(x['n_sd_b']))
-  } else {
-    x['n_b']   <- sprintf("%0.2f(%0.2f)",b,as.numeric(x['n_sd_b']))
-  }
+  x['n_b']   <- format_direction(a,b,x['n_sd_b'])
   x
 }
 
 format_panas <- function(x) {
   x['pa_p']   <- pvalue(x['pa_p'])
   x['pa_pnd'] <- sprintf("%0.2f",as.numeric(x['pa_pnd']))
-  x['pa_a']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['pa_mean_a']),as.numeric(x['pa_sd_a']))
-  x['pa_b']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['pa_mean_b']),as.numeric(x['pa_sd_b']))
+  a <- as.numeric(x['pa_mean_a'])
+  b <- as.numeric(x['pa_mean_b'])
+  x['pa_a'] <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['pa_sd_a']))
+  x['pa_b'] <- format_direction(a,b,x['pa_sd_b'],diff='>')
+
   x['na_p']   <- pvalue(x['na_p'])
   x['na_pnd'] <- sprintf("%0.2f",as.numeric(x['na_pnd']))
-  x['na_a']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['na_mean_a']),as.numeric(x['na_sd_a']))
-  x['na_b']   <- sprintf("%0.2f(%0.2f)",as.numeric(x['na_mean_b']),as.numeric(x['na_sd_b']))
-  x['d_p']    <- pvalue(x['d_p'])
-  x['d_pnd']  <- sprintf("%0.2f",as.numeric(x['d_pnd']))
-  x['d_a']    <- sprintf("%0.2f(%0.2f)",as.numeric(x['d_mean_a']),as.numeric(x['d_sd_a']))
-  x['d_b']    <- sprintf("%0.2f(%0.2f)",as.numeric(x['d_mean_b']),as.numeric(x['d_sd_b']))
+  a <- as.numeric(x['na_mean_a'])
+  b <- as.numeric(x['na_mean_b'])
+  x['na_a']  <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['na_sd_a']))
+  x['na_b']  <- format_direction(a,b,x['na_sd_b'])
+
+  x['d_p']   <- pvalue(x['d_p'])
+  x['d_pnd'] <- sprintf("%0.2f",as.numeric(x['d_pnd']))
+  a <- as.numeric(x['d_mean_a'])
+  b <- as.numeric(x['d_mean_b'])
+  x['d_a'] <- sprintf("%0.2f(%0.2f)",a,as.numeric(x['d_sd_a']))
+  x['d_b'] <- format_direction(a,b,x['d_sd_b'])
   x
 }
 
 # LaTeX table wording
 meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
 ## PANAS table
+options(xtable.sanitize.text.function=identity)
 p_head     <- "${p}$\\footnote{\\label{randp1}${p}$ value from randomisation test \\parencite{bulte_r_2008}}"
 p_head_ref <- "${p}$\\textsuperscript{\\ref{randp1}}"
 pa_head    <- paste("\\multicolumn{4}{l}{Positive Affect (PA)\\footnote{Cronbach's $\\alpha$: median = ",alpha['PA','median'],", range = ",alpha['PA','range1'],"--",alpha['PA','range2'],"}}",sep='')
@@ -290,7 +308,7 @@ d_head     <- paste("\\multicolumn{4}{l}{Depression (items 'sad' and 'depressed'
 results <- apply(panas,1,format_panas)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,pa_a,pa_b,pa_p,pa_pnd,na_a,na_b,na_p,na_pnd,d_a,d_b,d_p,d_pnd))
-strCaption <- paste0("Randomisation tests and meta-analysis for positive affect (PA), negative affect (NA) and depression.")
+strCaption <- paste0("Randomisation tests and meta-analysis for positive affect (PA), negative affect (NA) and depression. Values in \\textbf{bold} indicate changes in hypothesised direction.")
 sink(paste(results_d,'/panas.tex',sep=''),append=FALSE,split=FALSE)
 print(xtable(results, caption=strCaption, label="tab:panas", align=c('c','c','c','l','l','r','r@{\\hspace{2em}}','l','l','r','r@{\\hspace{2em}}','l','l','r','r')),
       size="scriptsize",
@@ -320,7 +338,7 @@ options(xtable.sanitize.text.function=identity)
 results <- apply(rt,1,format_rt)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,i_a,i_b,i_p,i_pnd,n_a,n_b,n_p,n_pnd))
-strCaption <- paste0("Randomisation tests and meta-analysis for I-word and N-word dot-probe scores\\tabfnm{a}.")
+strCaption <- paste0("Randomisation tests and meta-analysis for I-word and N-word dot-probe scores\\tabfnm{a}. Values in \\textbf{bold} indicate reductions in attentional bias after ABM training.")
 p_head     <- "${p}$\\tabfnm{b}"
 {
   sink('/dev/null')
@@ -354,7 +372,7 @@ p_head     <- "${p}$\\tabfnm{b}"
 }
 
 # footnotes
-fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}For both I-words and N-words, more negative scores indicate avoidance, and more positive scores vigilance. Values in \\textbf{bold} indicate reductions in attentional bias after ABM training.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
+fn <- paste("\\begin{tablenotes}[para,flushleft]\n{\\footnotesize\n\\tabfnt{a}For both I-words and N-words, more negative scores indicate avoidance, and more positive scores vigilance.\n\\tabfnt{b}${p}$ value from randomisation test \\parencite{bulte_r_2008}\n\\tabfnt{c}Meta-analytic ${p}$ value \\parencite{onghena_customization_2005}.\n}\n\\end{tablenotes}\n\\end{threeparttable}\n\\end{sidewaystable}",sep='')
 table = sub("\\begin{sidewaystable}","\\begin{sidewaystable}[!htbp]\n\\begin{threeparttable}\n",table,fixed=TRUE)
 table = sub("\\end{sidewaystable}",fn,table,fixed=TRUE)
 sink(paste(results_d,'/rt.tex',sep=''),append=FALSE,split=FALSE)
@@ -367,7 +385,7 @@ results <- apply(grs,1,format_grs)
 results <- t(results)
 results <- subset(results, select=c(participant,sessions,a,b,p,pnd))
 meta_label <- "${p}$$_{meta}$\\tabfnm{c}"
-strCaption <- paste0("Randomisation tests and meta-analysis for GRS\\tabfnm{a}.")
+strCaption <- paste0("Randomisation tests and meta-analysis for GRS\\tabfnm{a}. Values in \\textbf{bold} indicate changes in hypothesised direction.")
 {
   sink('/dev/null')
   table <- print(xtable(results, caption=strCaption, label="tab:grs", align=c('c','c','c','l','l','r','r')),
