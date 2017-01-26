@@ -81,7 +81,7 @@ neutral_title  <- '\\multicolumn{2}{l}{Neutral words}'
 neutral_n      <- paste('\\multicolumn{2}{c}{(${N}$ = ',results[1,'n_neutral'],')}',sep='')
 results <- subset(results, select = c(-n_negative,-n_neutral))
 strCaption <- paste0("Dimensional characteristics of Negative-Neutral word pairs")
-print(xtable(results, caption=strCaption, label="prepost", align=c('l','r','r','r','r','r','r','r')),
+print(xtable(results, caption=strCaption, label="tab:nwordcharacteristics", align=c('l','r','r','r','r','r','r','r')),
       size="footnotesize",
       include.rownames=TRUE,
       include.colnames=FALSE,
