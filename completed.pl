@@ -44,5 +44,8 @@ for (my $i = 1; $i <= 12; $i++ ) {
   push(@participants,{ %p });
 }
 
-my $tt = Template->new(INCLUDE_PATH => '/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe');
+my $tt = Template->new(
+  INCLUDE_PATH => '/home/paul/Documents/psychology/msc/M210/apprenticeship/opensesame/dotprobe',
+  POST_CHOMP   => 1
+);
 $tt->process('completed.tt', { h => $header, participants => \@participants } ) || die $tt->error;
