@@ -164,8 +164,8 @@ results <- apply(subset(results,select = -Row.names),1,format)
 results <- t(results)
 results <- subset(results,select = c('ct_pre','alpha_pre','ct_post','alpha_post','t','df','p.value','ci','d'))
 ci_head   <- "CI$_{95\\%}$\\tabfnm{a}"
-strCaption <- paste0("Pre-post comparisons")
-latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l','r','l','r','r','r','r','c','r'))
+strCaption <- paste0("Pre--post ABM training comparisons of trait anxiety (GAD-7), depression (PHQ-9), trait worry (PSQW) and trait rumination (RRS).")
+latex.tab <- xtable(results, caption=strCaption, label="tab:prepost", align=c('c','l','r','l','r','r','r','r','c','r'))
 
 # suppress print() output as we just want to capture it for now
 # NOTE: This *must* be in {} otherwise knitr will still print() the output due to its internal use of sink()
@@ -191,5 +191,5 @@ latex.tab <- xtable(results, caption=strCaption, label="prepost", align=c('c','l
 
 # footnotes
 table = sub("{table}","{threeparttable}",table,fixed=TRUE)
-table = sub("\\end{table}","\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{a}Confidence interval represents difference in pre and post measures. \\tabfnt{b}Cohen's d calculated using standard deviation of pre measures.\n}\n\\end{tablenotes}\n\\end{threeparttable}",table,fixed=TRUE)
+table = sub("\\end{table}","\\begin{tablenotes}[para,flushleft]\n{\\footnotesize \\tabfnt{a}Confidence interval represents difference in pre and post measures. \\tabfnt{b}Cohen's ${d}$ calculated using standard deviation of pre measures.\n}\n\\end{tablenotes}\n\\end{threeparttable}",table,fixed=TRUE)
 cat(table)
