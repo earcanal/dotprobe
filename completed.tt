@@ -18,7 +18,7 @@
 [% PROCESS accuracy.tt %]
 \setlength{\tabcolsep}{1pt}
 %\begin{threeparttable}
-\begin{sidewaystable}
+\begin{sidewaystable}[!htbp]
 \tiny{
     \begin{tabular}{@{} cr|c|p{7mm}|*{[% dates %]}{c|} @{}}
         \multicolumn{[% dates + 2 %]}{c}{Date} \\[2ex]
